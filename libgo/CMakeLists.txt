@@ -494,6 +494,7 @@ list(APPEND runtimecfiles
   "go/os/dir_gccgo_c.c"
   "go/reflect/makefunc_ffi_c.c"
   "go/runtime/internal/atomic/atomic.c"
+  "go/runtime/internal/syscall/errno.c"
   "go/internal/cpu/cpu_gccgo.c"
   "go/sync/atomic/atomic.c"
   "go/syscall/errno.c"
