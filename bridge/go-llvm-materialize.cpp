@@ -1942,7 +1942,7 @@ class FoldVisitor {
     if (expr && expr->value())
       return std::make_pair(ContinueWalk, node);
 
-    // Fold addr(deref(X)) => X
+    // Fold addr(deref(X)) and deref(addr(X)) => X
     if (node->flavor() == N_Address) {
       std::vector<Bexpression *> akids = expr->getChildExprs();
       if (akids[0]->flavor() == N_Deref) {
@@ -1958,6 +1958,22 @@ class FoldVisitor {
 
         // Return result
         expr = dkids[0];
+      }
+    } else if (node->flavor() == N_Deref) {
+      std::vector<Bexpression *> dkids = expr->getChildExprs();
+      if (dkids[0]->flavor() == N_Address) {
+        Bexpression *address = dkids[0];
+
+        // Extract children and delete first the deref node, then the
+        // addr node. Order is important; if we delete the addr first
+        // then the integrity visitor will wind up trying to access the
+        // deleted addr.
+        be_->nodeBuilder().extractChildenAndDestroy(expr);
+        std::vector<Bexpression *> akids =
+            be_->nodeBuilder().extractChildenAndDestroy(address);
+
+        // Return result
+        expr = akids[0];
       }
     }
     return std::make_pair(ContinueWalk, expr);
