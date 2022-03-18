@@ -1531,15 +1531,41 @@ Bexpression *Llvm_backend::unary_expression(Operator op,
 
   Btype *bt = expr->btype();
 
+  // Special handling for unary minus applied to fp or complex type.
   if (op == OPERATOR_MINUS) {
-    // Special handling for unary minus applied to fp type.
-    BFloatType *ft = bt->castToBFloatType();
-    Bexpression *zerexp = (ft ? minusZeroExpr(ft) : zero_expression(bt));
+    Bexpression *zerexp;
+
+    switch (bt->flavor()) {
+    case Btype::FloatT:
+      zerexp = minusZeroExpr(bt->castToBFloatType());
+      break;
+    case Btype::ComplexT:
+      zerexp = minusZeroExpr(bt->castToBComplexType());
+      break;
+    default:
+      zerexp = zero_expression(bt);
+    }
+
     return binary_expression(OPERATOR_MINUS, zerexp, expr, location);
   }
 
   Bexpression *rval = nbuilder_.mkUnaryOp(op, bt, nullptr, expr, location);
   return rval;
+}
+
+Bexpression *Llvm_backend::minusZeroExpr(BComplexType *typ)
+{
+  assert(typ);
+  assert(typ->type()->getTypeID() == llvm::Type::StructTyID);
+
+  llvm::StructType *styp = llvm::cast<llvm::StructType>(typ->type());
+  llvm::Constant *nzrealcon = llvm::ConstantFP::getNegativeZero(styp->getElementType(0));
+  llvm::Constant *nzimagcon = llvm::ConstantFP::getNegativeZero(styp->getElementType(1));
+  std::vector<llvm::Constant*> structVals {nzrealcon, nzimagcon};
+  llvm::Constant *nzcmplxcon = llvm::ConstantStruct::get(styp, structVals);
+  Bexpression *bconst = nbuilder_.mkConst(typ, nzcmplxcon);
+
+  return makeGlobalExpression(bconst, nzcmplxcon, typ, Location());
 }
 
 Bexpression *Llvm_backend::minusZeroExpr(BFloatType *typ)
