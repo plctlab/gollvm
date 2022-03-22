@@ -159,4 +159,7 @@
 /* Define to 1 if _Unwind_GetIPInfo is available. */
 #cmakedefine HAVE_GETIPINFO 1
 
+/* Define to 1 if you have the `strsignal' function. */
+#cmakedefine HAVE_STRSIGNAL 1
+
 #endif
