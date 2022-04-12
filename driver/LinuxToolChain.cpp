@@ -73,6 +73,8 @@ Linux::Linux(gollvm::driver::Driver &driver,
                                       "/../" + ftrip).str());
   addIfPathExists(fpaths, llvm::Twine(osLibDir).str());
   addIfPathExists(fpaths, llvm::Twine(osLibDir + "/" + ftrip).str());
+  if (this->distro_ == distro::DistroArchLinux)
+    addIfPathExists(fpaths, llvm::Twine("/usr/" + osLibDir).str());
 
   // Include program and file paths in verbose output.
   if (driver.args().hasArg(gollvm::options::OPT_v)) {
