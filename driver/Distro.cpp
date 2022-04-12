@@ -34,9 +34,6 @@ DistroVariety DetectDistro(gnutools::gccdetect::InspectFS &ifs,
   if (ifs.exists("/etc/debian_version"))
     return DistroDebian;
 
-  if (ifs.exists("/etc/lsb-release"))
-    return DistroUbuntu;
-
   if (ifs.exists("/etc/redhat-release"))
     return DistroRedhat;
 
@@ -51,6 +48,9 @@ DistroVariety DetectDistro(gnutools::gccdetect::InspectFS &ifs,
 
   if (ifs.exists("/etc/gentoo-release"))
     return DistroGentoo;
+
+  if (ifs.exists("/etc/lsb-release"))
+    return DistroUbuntu;
 
   return DistroUnknown;
 }
