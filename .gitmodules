@@ -1,14 +1,9 @@
 [submodule "gofrontend"]
 	path = gofrontend
 	url = https://github.com/plctlab/gofrontend.git
-	branch = master
-
-[submodule "libffi"]
+[submodule "libgo/libffi"]
 	path = libgo/libffi
 	url = https://github.com/plctlab/libffi.git
-	branch = master
-
-[submodule "libbacktrace"]
+[submodule "libgo/libbacktrace"]
 	path = libgo/libbacktrace
 	url = https://github.com/plctlab/libbacktrace.git
-	branch = master
