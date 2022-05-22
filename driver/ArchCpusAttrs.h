@@ -121,8 +121,16 @@ static const CpuAttrs attrs1[] = {
   { "", "" } // sentinel
 };
 
+// Triple: riscv64-unknown-linux-gnu
+static const CpuAttrs attrs2[] = {
+  // first entry is default cpu march
+  {"sifive-u74", "+64bit,+f,+d,+m,+c,+a"},
+  {"", ""}
+};
+
 const TripleCpus triples[] = {
   { "x86_64-unknown-linux-gnu", &attrs0[0] },
   { "aarch64-unknown-linux-gnu", &attrs1[0] },
+  { "riscv64-unknown-linux-gnu", &attrs2[0] },
   { "", nullptr } // sentinel
 };
