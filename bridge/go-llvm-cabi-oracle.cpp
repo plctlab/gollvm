@@ -518,6 +518,8 @@ void EightByteInfo::determineABITypesForX86_64_SysV()
 //
 void EightByteInfo::determineAPITypesForRISC_V()
 {
+  // In the direct case, ebrs_.size() cannot be greater than 2 because parameters
+  // larger than 16 bytes are passed indirectly.
   assert(ebrs_.size() <= 2);
   for (auto &ebr : ebrs_) {
     if (ebr.abiDirectType != nullptr)
