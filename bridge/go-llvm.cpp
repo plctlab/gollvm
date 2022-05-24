@@ -97,6 +97,7 @@ Llvm_backend::Llvm_backend(llvm::LLVMContext &context,
         ownModule_->setTargetTriple("riscv64-unknown-linux-gnu");
         ownModule_->setDataLayout("e-m:e-p:64:64-i64:64-i128:128-n64-S128");
         triple_ = llvm::Triple("riscv64-unknown-linux-gnu");
+        break;
       default:
         std::cerr <<"Unsupported calling convention\n";
     }
