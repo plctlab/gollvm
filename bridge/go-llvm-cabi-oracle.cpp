@@ -610,6 +610,7 @@ public:
     case llvm::CallingConv::C:
       availIntRegs_ = 8;
       availFloatRegs_ = 8;
+      break;
     default:
       llvm::errs() << "unsupported llvm::CallingConv::ID " << cconv << "\n";
       break;
@@ -716,6 +717,7 @@ void CABIOracle::setCC()
     break;
   case llvm::CallingConv::C:
     cc_ = std::unique_ptr<CABIOracleArgumentAnalyzer>( new CABIOracleRISC_V(typeManager_));
+    break;
   default:
     llvm::errs() << "unsupported llvm::CallingConv::ID " << ccID_ << "\n";
     break;
