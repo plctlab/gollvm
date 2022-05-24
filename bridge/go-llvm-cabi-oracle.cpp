@@ -516,32 +516,51 @@ void EightByteInfo::determineABITypesForX86_64_SysV()
 // the correct alignment. Work around this by checking for such situations
 // and promoting the type of the first EBR to 64 bits.
 //
-void EightByteInfo::determineAPITypesForRISC_V()
-{
+void EightByteInfo::determineAPITypesForRISC_V() {
   // In the direct case, ebrs_.size() cannot be greater than 2 because parameters
   // larger than 16 bytes are passed indirectly.
   assert(ebrs_.size() <= 2);
+  unsigned intRegions = 0;
+  unsigned floatRegions = 0;
   for (auto &ebr : ebrs_) {
     if (ebr.abiDirectType != nullptr)
       continue;
-    // Preserve pointerness for the use of GC.
-    // TODO: this assumes pointer is 8 byte, so we never pack pointer
-    // and other stuff together.
-    if (ebr.types[0]->isPointerTy()) {
-      ebr.abiDirectType = tm()->llvmPtrType();
-      continue;
+    TypDisp regionDisp = ebr.getRegionTypDisp();
+    if (regionDisp == FlavSSE) {
+      // Case 1: two floats -> vector
+      if (ebr.types.size() == 2)
+        ebr.abiDirectType = tm()->llvmTwoFloatVecType();
+      else if (ebr.types.size() == 1) {
+        assert(ebr.types[0] == tm()->llvmDoubleType() ||
+               ebr.types[0] == tm()->llvmFloatType());
+        ebr.abiDirectType = ebr.types[0];
+      } else {
+        assert(false && "this should never happen");
+      }
+      floatRegions += 1;
+    } else {
+      unsigned nel = ebr.offsets.size();
+      unsigned bytes = ebr.offsets[nel-1] - ebr.offsets[0] +
+                       tm()->llvmTypeSize(ebr.types[nel-1]);
+      assert(bytes && bytes <= 8);
+      // Preserve pointerness for the use of GC.
+      // TODO: this assumes pointer is 8 byte, so we never pack pointer
+      // and other stuff together.
+      if (ebr.types[0]->isPointerTy())
+        ebr.abiDirectType = tm()->llvmPtrType();
+      else
+        ebr.abiDirectType = tm()->llvmArbitraryIntegerType(bytes);
+      intRegions += 1;
     }
-    unsigned nel = ebr.offsets.size();
-    unsigned bytes = ebr.offsets[nel - 1] - ebr.offsets[0] +
-                     tm()->llvmTypeSize(ebr.types[nel - 1]);
-    assert(bytes && bytes <= 8);
-    ebr.abiDirectType = tm()->llvmArbitraryIntegerType(bytes);
   }
 
   // See the example above for more on why this is needed.
-  if (ebrs_.size() == 2 && ebrs_[0].abiDirectType->isIntegerTy()) {
+  if (intRegions == 2 &&
+      ebrs_[0].abiDirectType->isIntegerTy())
     ebrs_[0].abiDirectType = tm()->llvmArbitraryIntegerType(8);
-  }
+  else if (floatRegions == 2 &&
+           ebrs_[0].abiDirectType == tm()->llvmFloatType())
+    ebrs_[0].abiDirectType = tm()->llvmDoubleType();
 }
 
 //......................................................................
@@ -656,7 +675,6 @@ public:
   unsigned availFloatRegs() const { return availFloatRegs_; }
   void clearAvailIntRegs() { availIntRegs_ = 0; }
   void clearAvailSIMDFPRegs() { availSIMDFPRegs_ = 0; }
-  void clearAvailFloatRegs() { availFloatRegs_ = 0; }
 
 private:
   unsigned availIntRegs_;

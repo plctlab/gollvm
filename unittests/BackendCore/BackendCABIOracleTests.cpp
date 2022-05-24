@@ -438,6 +438,190 @@ TEST(BackendCABIOracleTests, ExtendedArm64) {
   }
 }
 
+TEST(BackendCABIOracleTests, ExtendedRISCV) {
+  LLVMContext C;
+  std::unique_ptr<Llvm_backend> bep(
+      new Llvm_backend(C, nullptr, nullptr, 0, llvm::Triple(), llvm::CallingConv::C));
+  Llvm_backend *be = bep.get();
+
+  Btype *bi8t = be->integer_type(false, 8);
+  Btype *bu8t = be->integer_type(true, 8);
+  Btype *bu64t = be->integer_type(true, 64);
+  Btype *bu32t = be->integer_type(true, 32);
+  Btype *bi16t = be->integer_type(false, 16);
+  Btype *bf32t = be->float_type(32);
+  Btype *bf64t = be->float_type(64);
+  Btype *bpu64t = be->pointer_type(bu64t);
+  Btype *bpf64t = be->pointer_type(bf64t);
+  Btype *st0 = mkBackendStruct(be, nullptr);
+  Btype *st1 = mkBackendStruct(be, bi8t, "a", bu8t, "b", bf32t, "c", nullptr);
+  Btype *st2 = mkBackendStruct(be, bf64t, "f1", bf64t, "f2", nullptr);
+  Btype *st3 = mkBackendStruct(be, st2, "f1", bi8t, "f2", nullptr);
+  Btype *st4 = mkBackendStruct(be, bf32t, "f1", bf32t, "f2", nullptr);
+  Btype *st5 = mkBackendStruct(be, bf32t, "f1", nullptr);
+  Btype *st6 = mkBackendStruct(be, bf32t, "f1", bi8t, "a", bu8t, "b",
+                               bu64t, "c", nullptr);
+  Btype *st7 = mkBackendStruct(be, bf32t, "f1", bu32t, "f2", nullptr);
+  Btype *st8 = mkBackendStruct(be, bi8t, "f1", bi16t, "f2", st7, "f3", nullptr);
+  Btype *stii = mkBackendStruct(be, bu64t, "a", bu64t, "b", nullptr);
+  Btype *stip = mkBackendStruct(be, bu64t, "a", bpu64t, "b", nullptr);
+  Btype *stpi = mkBackendStruct(be, bpu64t, "a", bu64t, "b", nullptr);
+  Btype *stpp = mkBackendStruct(be, bpu64t, "a", bpu64t, "b", nullptr);
+  Btype *at0 = be->array_type(bu32t, mkInt64Const(be, int64_t(0)));
+  Btype *at1 = be->array_type(bu32t, mkInt64Const(be, int64_t(1)));
+  Btype *at2 = be->array_type(bu32t, mkInt64Const(be, int64_t(3)));
+  Btype *at3 = be->array_type(bu8t, mkInt64Const(be, int64_t(16)));
+
+  struct FcnItem {
+    FcnItem(const std::vector<Btype*> &r,
+            const std::vector<Btype*> &p,
+            const char *d, const char *t)
+        : results(r), parms(p), expDump(d), expTyp(t) { }
+    std::vector<Btype*> results;
+    std::vector<Btype*> parms;
+    const char *expDump;
+    const char *expTyp;
+  };
+
+  Btype *nt = nullptr;
+  std::vector<FcnItem> items = {
+
+      // 1
+      FcnItem( { }, { },
+              "Return: Ignore { void } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0",
+              "void (i8*)"),
+
+      // 2
+      FcnItem( { bi8t }, { },
+              "Return: Direct AttrSext { i8 } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0",
+              "i8 (i8*)"),
+
+      // 3
+      FcnItem( { }, { bi8t },
+              "Return: Ignore { void } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0 "
+              "Param 2: Direct AttrSext { i8 } sigOffset: 1",
+              "void (i8*, i8)"),
+
+      // 4
+      FcnItem( { }, { st5, bpf64t },
+              "Return: Ignore { void } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0 "
+              "Param 2: Direct { float } sigOffset: 1 "
+              "Param 3: Direct { double* } sigOffset: 2",
+              "void (i8*, float, double*)"),
+
+      // 5
+      FcnItem({ bi8t, bf64t }, { bi8t, bu8t, st0 },
+              "Return: Direct { { i8, double } } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0 "
+              "Param 2: Direct AttrSext { i8 } sigOffset: 1 "
+              "Param 3: Direct AttrZext { i8 } sigOffset: 2 "
+              "Param 4: Ignore { void } sigOffset: -1",
+              "{ i8, double } (i8*, i8, i8)"),
+
+      // 6
+      FcnItem({ st2 }, { st2, st0, st4, st1 },
+              "Return: Direct { { double, double } } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0 "
+              "Param 2: Direct { double, double } sigOffset: 1 "
+              "Param 3: Ignore { void } sigOffset: -1 "
+              "Param 4: Direct { <2 x float> } sigOffset: 3 "
+              "Param 5: Direct { i64 } sigOffset: 4 ",
+              "{ double, double } (i8*, double, double, <2 x float>, i64)"),
+
+      // 7
+      FcnItem({ st3 }, { st3, st0, bu8t },
+              "Return: Indirect AttrStructReturn { { { double, double }, i8 }* } sigOffset: 0 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 1 "
+              "Param 2: Indirect AttrByVal { { { double, double }, i8 }* } sigOffset: 2 "
+              "Param 3: Ignore { void } sigOffset: -1 "
+              "Param 4: Direct AttrZext { i8 } sigOffset: 3 ",
+              "void ({ { double, double }, i8 }*, i8*, "
+              "{ { double, double }, i8 }*, i8)"),
+
+      // 8
+      FcnItem( { st6 }, { st6, st6 },
+              "Return: Direct { { i64, i64 } } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0 "
+              "Param 2: Direct { i64, i64 } sigOffset: 1 "
+              "Param 3: Direct { i64, i64 } sigOffset: 3",
+              "{ i64, i64 } (i8*, i64, i64, i64, i64)"),
+
+      // 9
+      FcnItem( { st8 }, { st8 },
+              "Return: Direct { { i64, i32 } } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0 "
+              "Param 2: Direct { i64, i32 } sigOffset: 1",
+              "{ i64, i32 } (i8*, i64, i32)"),
+
+      // 10
+      FcnItem( { at0 }, { at1 },
+              "Return: Ignore { void } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0 "
+              "Param 2: Direct { i32 } sigOffset: 1",
+              "void (i8*, i32)"),
+
+      // 11
+      FcnItem( { at2 }, { at3 },
+              "Return: Direct { { i64, i32 } } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0 "
+              "Param 2: Direct { i64, i64 } sigOffset: 1",
+              "{ i64, i32 } (i8*, i64, i64)"),
+
+      // 12
+      // Make sure pointerness is preserved.
+      FcnItem( { stip }, { stii, stpp, stpi },
+              "Return: Direct { { i64, i8* } } sigOffset: -1 "
+              "Param 1: Direct AttrNest { i8* } sigOffset: 0 "
+              "Param 2: Direct { i64, i64 } sigOffset: 1 "
+              "Param 3: Direct { i8*, i8* } sigOffset: 3 "
+              "Param 4: Direct { i8*, i64 } sigOffset: 5",
+              "{ i64, i8* } (i8*, i64, i64, i8*, i8*, i8*, i64)"),
+  };
+
+  unsigned count = 1;
+  for (auto &item : items) {
+    std::vector<Backend::Btyped_identifier> results;
+    std::vector<Backend::Btyped_identifier> params;
+    for (auto &r : item.results)
+      results.push_back(mkid(r));
+    for (auto &p : item.parms)
+      params.push_back(mkid(p));
+    Btype *rt = nullptr;
+    if (results.size() > 1)
+      rt = be->struct_type(results);
+    Btype *t = be->function_type(mkid(nt), params, results, rt, Location());
+    BFunctionType *bft = t->castToBFunctionType();
+    CABIOracle cab(bft, be->typeManager());
+
+    {
+      std::string reason;
+      bool equal = difftokens(item.expDump, cab.toString(), reason);
+      EXPECT_EQ("pass", equal ? "pass" : reason);
+      if (!equal) {
+        std::cerr << "count: " << count << "\n";
+        std::cerr << "exp:\n" << item.expDump << "\n";
+        std::cerr << "act:\n" << cab.toString() << "\n";
+      }
+    }
+    {
+      std::string reason;
+      std::string result(repr(cab.getFunctionTypeForABI()));
+      bool equal = difftokens(item.expTyp, result, reason);
+      EXPECT_EQ("pass", equal ? "pass" : reason);
+      if (!equal) {
+        std::cerr << "count: " << count << "\n";
+        std::cerr << "exp:\n" << item.expTyp << "\n";
+        std::cerr << "act:\n" << result << "\n";
+      }
+    }
+    count++;
+  }
+}
+
 TEST(BackendCABIOracleTests, RecursiveCall1Amd64) {
   FcnTestHarness h(llvm::CallingConv::X86_64_SysV);
   Llvm_backend *be = h.be();
