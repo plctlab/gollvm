@@ -438,7 +438,7 @@ TEST(BackendCABIOracleTests, ExtendedArm64) {
   }
 }
 
-TEST(BackendCABIOracleTests, ExtendedRISCV) {
+TEST(BackendCABIOracleTests, ExtendedRV64) {
   LLVMContext C;
   std::unique_ptr<Llvm_backend> bep(
       new Llvm_backend(C, nullptr, nullptr, 0, llvm::Triple(), llvm::CallingConv::C));
@@ -869,6 +869,131 @@ TEST(BackendCABIOracleTests, RecursiveCall1Arm64) {
   EXPECT_FALSE(broken && "Module failed to verify.");
 }
 
+TEST(BackendCABIOracleTests, RecursiveCall1RV64) {
+  FcnTestHarness h(llvm::CallingConv::C);
+  Llvm_backend *be = h.be();
+
+  // type s1 struct {
+  //   f1, f2 float32
+  //   i1, i2, i3 int16
+  // }
+  // type s2 struct {
+  //   k float64
+  //   f1, f2 float32
+  // }
+  // type s3 struct {
+  //   f1, s1
+  //   f2, s2
+  // }
+  // type s4 struct {
+  // }
+  // func foo(x s1, y s2, z s4, sm1 uint8, sm2 int8, w s3) s2 {
+  //   if (sm1 == 0) {
+  //     return y
+  //   }
+  //   return foo(x, y, z, sm1-1, sm2, w)
+  // }
+  //
+
+  // Create struct types
+  Btype *bf32t = be->float_type(32);
+  Btype *bf64t = be->float_type(64);
+  Btype *bi16t = be->integer_type(false, 16);
+  Btype *bi8t = be->integer_type(false, 8);
+  Btype *bu8t = be->integer_type(true, 8);
+  Btype *s1 = mkBackendStruct(be, bf32t, "f1", bf32t, "f2",
+                              bi16t, "i1", bi16t, "i2", bi16t, "i3", nullptr);
+  Btype *s2 = mkBackendStruct(be, bf64t, "k", bf32t, "f1", bf32t, "f2",
+                              nullptr);
+  Btype *s3 = mkBackendStruct(be, s1, "f1", s2, "f2", nullptr);
+  Btype *s4 = mkBackendStruct(be, nullptr);
+
+  // Create function type
+  BFunctionType *befty1 = mkFuncTyp(be,
+                                    L_PARM, s1,
+                                    L_PARM, s2,
+                                    L_PARM, s4,
+                                    L_PARM, bu8t,
+                                    L_PARM, bi8t,
+                                    L_PARM, s3,
+                                    L_RES, s2,
+                                    L_END);
+  Bfunction *func = h.mkFunction("foo", befty1);
+
+  // sm1 == 0
+  Bvariable *p3 = func->getNthParamVar(3);
+  Location loc;
+  Bexpression *vex = be->var_expression(p3, loc);
+  Bexpression *c0 = be->convert_expression(bu8t, mkInt32Const(be, 0), loc);
+  Bexpression *eq = be->binary_expression(OPERATOR_EQEQ, vex, c0, loc);
+
+  // call
+  Bexpression *fn = be->function_code_expression(func, loc);
+  std::vector<Bexpression *> args;
+  Bvariable *p0 = func->getNthParamVar(0);
+  args.push_back(be->var_expression(p0, loc));
+
+  Bvariable *p1 = func->getNthParamVar(1);
+  args.push_back(be->var_expression(p1, loc));
+
+  Bvariable *p2 = func->getNthParamVar(2);
+  args.push_back(be->var_expression(p2, loc));
+
+  Bvariable *p3x = func->getNthParamVar(3);
+  Bexpression *vex3 = be->var_expression(p3x, loc);
+  Bexpression *c1 = be->convert_expression(bu8t, mkInt32Const(be, 1), loc);
+  Bexpression *minus = be->binary_expression(OPERATOR_MINUS, vex3, c1, loc);
+  args.push_back(minus);
+
+  Bvariable *p4 = func->getNthParamVar(4);
+  args.push_back(be->var_expression(p4, loc));
+
+  Bvariable *p5 = func->getNthParamVar(5);
+  args.push_back(be->var_expression(p5, loc));
+  Bexpression *call = be->call_expression(func, fn, args, nullptr, h.loc());
+
+  // return y
+  std::vector<Bexpression *> rvals1;
+  rvals1.push_back(be->var_expression(p1, loc));
+  Bstatement *rst1 = h.mkReturn(rvals1, FcnTestHarness::NoAppend);
+
+  // return call
+  std::vector<Bexpression *> rvals2;
+  rvals2.push_back(call);
+  Bstatement *rst2 = h.mkReturn(rvals2, FcnTestHarness::NoAppend);
+
+  DECLARE_EXPECTED_OUTPUT(exp, R"RAW_RESULT(
+    %p3.ld.0 = load i8, i8* %p3.addr, align 1
+    %sub.0 = sub i8 %p3.ld.0, 1
+    %p4.ld.0 = load i8, i8* %p4.addr, align 1
+    %cast.1 = bitcast { float, float, i16, i16, i16 }* %p0.addr to { <2 x float>, i48 }*
+    %field0.0 = getelementptr inbounds { <2 x float>, i48 }, { <2 x float>, i48 }* %cast.1, i32 0, i32 0
+    %ld.1 = load <2 x float>, <2 x float>* %field0.0, align 8
+    %field1.0 = getelementptr inbounds { <2 x float>, i48 }, { <2 x float>, i48 }* %cast.1, i32 0, i32 1
+    %ld.2 = load i48, i48* %field1.0, align 8
+    %cast.2 = bitcast { double, float, float }* %p1.addr to { double, <2 x float> }*
+    %field0.1 = getelementptr inbounds { double, <2 x float> }, { double, <2 x float> }* %cast.2, i32 0, i32 0
+    %ld.3 = load double, double* %field0.1, align 8
+    %field1.1 = getelementptr inbounds { double, <2 x float> }, { double, <2 x float> }* %cast.2, i32 0, i32 1
+    %ld.4 = load <2 x float>, <2 x float>* %field1.1, align 8
+    %call.0 = call addrspace(0) { double, <2 x float> } @foo(i8* nest undef, <2 x float> %ld.1, i48 %ld.2, double %ld.3, <2 x float> %ld.4, i8 zeroext %sub.0, i8 signext %p4.ld.0, { { float, float, i16, i16, i16 }, { double, float, float } }* byval({ { float, float, i16, i16, i16 }, { double, float, float } }) %p5)
+    %cast.3 = bitcast { double, float, float }* %sret.actual.0 to { double, <2 x float> }*
+    store { double, <2 x float> } %call.0, { double, <2 x float> }* %cast.3, align 8
+    %cast.4 = bitcast { double, float, float }* %sret.actual.0 to { double, <2 x float> }*
+    %ld.5 = load { double, <2 x float> }, { double, <2 x float> }* %cast.4, align 8
+    ret { double, <2 x float> } %ld.5
+  )RAW_RESULT");
+
+  bool isOK = h.expectStmt(rst2, exp);
+  EXPECT_TRUE(isOK && "Statement does not have expected contents");
+
+  // if statement
+  h.mkIf(eq, rst1, rst2);
+
+  bool broken = h.finish(PreserveDebugInfo);
+  EXPECT_FALSE(broken && "Module failed to verify.");
+}
+
 TEST(BackendCABIOracleTests, PassAndReturnArraysAmd64) {
   FcnTestHarness h(llvm::CallingConv::X86_64_SysV);
   Llvm_backend *be = h.be();
@@ -951,6 +1076,53 @@ TEST(BackendCABIOracleTests, PassAndReturnArraysArm64) {
     %cast.2 = bitcast [3 x double]* %sret.actual.0 to { double, double, double }*
     %ld.1 = load { double, double, double }, { double, double, double }* %cast.2, align 8
     ret { double, double, double } %ld.1
+  )RAW_RESULT");
+
+  bool isOK = h.expectBlock(exp);
+  EXPECT_TRUE(isOK && "Block does not have expected contents");
+
+  bool broken = h.finish(PreserveDebugInfo);
+  EXPECT_FALSE(broken && "Module failed to verify.");
+}
+
+TEST(BackendCABIOracleTests, PassAndReturnArraysRV64) {
+  FcnTestHarness h(llvm::CallingConv::C);
+  Llvm_backend *be = h.be();
+
+  Btype *bf32t = be->float_type(32);
+  Btype *bf64t = be->float_type(64);
+  Btype *at2f = be->array_type(bf32t, mkInt64Const(be, int64_t(2)));
+  Btype *at3d = be->array_type(bf64t, mkInt64Const(be, int64_t(3)));
+
+  // func foo(fp [2]float32) [3]float64
+  BFunctionType *befty1 = mkFuncTyp(be,
+                                    L_PARM, at2f,
+                                    L_RES, at3d,
+                                    L_END);
+  Bfunction *func = h.mkFunction("foo", befty1);
+
+  // foo(fp)
+  Location loc;
+  Bvariable *p0 = func->getNthParamVar(0);
+  Bexpression *vex = be->var_expression(p0, loc);
+  Bexpression *fn = be->function_code_expression(func, loc);
+  std::vector<Bexpression *> args;
+  args.push_back(vex);
+  Bexpression *call = be->call_expression(func, fn, args, nullptr, h.loc());
+
+  // return foo(fp)
+  std::vector<Bexpression *> rvals;
+  rvals.push_back(call);
+  h.mkReturn(rvals);
+
+  DECLARE_EXPECTED_OUTPUT(exp, R"RAW_RESULT(
+    %cast.0 = bitcast [2 x float]* %p0.addr to <2 x float>*
+    %ld.0 = load <2 x float>, <2 x float>* %cast.0, align 8
+    call addrspace(0) void @foo([3 x double]* sret([3 x double]) "go_sret" %sret.actual.0, i8* nest undef, <2 x float> %ld.0)
+    %cast.1 = bitcast [3 x double]* %sret.formal.0 to i8*
+    %cast.2 = bitcast [3 x double]* %sret.actual.0 to i8*
+    call addrspace(0) void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %cast.1, i8* align 8 %cast.2, i64 24, i1 false)
+    ret void
   )RAW_RESULT");
 
   bool isOK = h.expectBlock(exp);
@@ -1176,4 +1348,79 @@ TEST(BackendCABIOracleTests, PassAndReturnComplexArm64) {
   EXPECT_FALSE(broken && "Module failed to verify.");
 }
 
+TEST(BackendCABIOracleTests, PassAndReturnComplexRV64) {
+  FcnTestHarness h(llvm::CallingConv::C);
+  Llvm_backend *be = h.be();
+
+  Btype *bc64t = be->complex_type(64);
+  Btype *bc128t = be->complex_type(128);
+
+  // func foo(x complex64, y complex128) complex64
+  BFunctionType *befty1 = mkFuncTyp(be,
+                                    L_PARM, bc64t,
+                                    L_PARM, bc128t,
+                                    L_RES, bc64t,
+                                    L_END);
+  Bfunction *func = h.mkFunction("foo", befty1);
+
+  // z = foo(x, y)
+  Location loc;
+  Bvariable *x = func->getNthParamVar(0);
+  Bvariable *y = func->getNthParamVar(1);
+  Bexpression *xvex = be->var_expression(x, loc);
+  Bexpression *yvex = be->var_expression(y, loc);
+  Bexpression *fn1 = be->function_code_expression(func, loc);
+  std::vector<Bexpression *> args1 = {xvex, yvex};
+  Bexpression *call1 = be->call_expression(func, fn1, args1, nullptr, h.loc());
+  h.mkLocal("z", bc64t, call1);
+
+  // Call with constant args
+  // foo(1+2i, 3+4i)
+  mpc_t mpc_val1, mpc_val2;
+  mpc_init2(mpc_val1, 256);
+  mpc_set_d_d(mpc_val1, 1.0, 2.0, GMP_RNDN);
+  mpc_init2(mpc_val2, 256);
+  mpc_set_d_d(mpc_val2, 3.0, 4.0, GMP_RNDN);
+  Bexpression *ccon1 = be->complex_constant_expression(bc64t, mpc_val1);
+  Bexpression *ccon2 = be->complex_constant_expression(bc128t, mpc_val2);
+  mpc_clear(mpc_val1);
+  mpc_clear(mpc_val2);
+  Bexpression *fn2 = be->function_code_expression(func, loc);
+  std::vector<Bexpression *> args2 = {ccon1, ccon2};
+  Bexpression *call2 = be->call_expression(func, fn2, args2, nullptr, h.loc());
+
+  // return the call expr above
+  std::vector<Bexpression *> rvals = {call2};
+  h.mkReturn(rvals);
+
+  DECLARE_EXPECTED_OUTPUT(exp, R"RAW_RESULT(
+    %cast.0 = bitcast { float, float }* %p0.addr to <2 x float>*
+    %ld.0 = load <2 x float>, <2 x float>* %cast.0, align 8
+    %field0.0 = getelementptr inbounds { double, double }, { double, double }* %p1.addr, i32 0, i32 0
+    %ld.1 = load double, double* %field0.0, align 8
+    %field1.0 = getelementptr inbounds { double, double }, { double, double }* %p1.addr, i32 0, i32 1
+    %ld.2 = load double, double* %field1.0, align 8
+    %call.0 = call addrspace(0) <2 x float> @foo(i8* nest undef, <2 x float> %ld.0, double %ld.1, double %ld.2)
+    %cast.2 = bitcast { float, float }* %sret.actual.0 to <2 x float>*
+    store <2 x float> %call.0, <2 x float>* %cast.2, align 8
+    %cast.3 = bitcast { float, float }* %z to i8*
+    %cast.4 = bitcast { float, float }* %sret.actual.0 to i8*
+    call addrspace(0) void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %cast.3, i8* align 4 %cast.4, i64 8, i1 false)
+    %ld.3 = load <2 x float>, <2 x float>* bitcast ({ float, float }* @const.0 to <2 x float>*), align 8
+    %ld.4 = load double, double* getelementptr inbounds ({ double, double }, { double, double }* @const.1, i32 0, i32 0), align 8
+    %ld.5 = load double, double* getelementptr inbounds ({ double, double }, { double, double }* @const.1, i32 0, i32 1), align 8
+    %call.1 = call addrspace(0) <2 x float> @foo(i8* nest undef, <2 x float> %ld.3, double %ld.4, double %ld.5)
+    %cast.7 = bitcast { float, float }* %sret.actual.1 to <2 x float>*
+    store <2 x float> %call.1, <2 x float>* %cast.7, align 8
+    %cast.8 = bitcast { float, float }* %sret.actual.1 to <2 x float>*
+    %ld.6 = load <2 x float>, <2 x float>* %cast.8, align 8
+    ret <2 x float> %ld.6
+  )RAW_RESULT");
+
+  bool isOK = h.expectBlock(exp);
+  EXPECT_TRUE(isOK && "Block does not have expected contents");
+
+  bool broken = h.finish(PreserveDebugInfo);
+  EXPECT_FALSE(broken && "Module failed to verify.");
+}
 } // namespace
