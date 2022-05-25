@@ -417,10 +417,6 @@ ToolChain *Driver::setup()
   triple_ = defaultTargetTriple;
   if (const opt::Arg *arg = args_.getLastArg(gollvm::options::OPT_target_EQ))
     triple_ = Triple(Triple::normalize(arg->getValue()));
-  if (triple_ != defaultTargetTriple) {
-    errs() << progname_ << ": error: gollvm doesn't support cross compiling yet\n";
-    return nullptr;
-  }
 
   // Honor -dumpmachine
   if (args_.hasArg(gollvm::options::OPT_dumpmachine)) {

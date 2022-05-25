@@ -411,6 +411,9 @@ bool CompileGoImpl::setup(const Action &jobAction)
 
   TargetOptions Options;
 
+  if (triple_.getArch() == llvm::Triple::riscv64)
+    Options.MCOptions.ABIName = "lp64d";
+
   auto jat = jobAction.type();
   assert(jat == Action::A_CompileAndAssemble ||
          jat == Action::A_Compile);
@@ -766,6 +769,9 @@ void CompileGoImpl::setCConv()
       break;
     case Triple::aarch64:
       cconv_ = CallingConv::ARM_AAPCS;
+      break;
+    case Triple::riscv64:
+      cconv_ = CallingConv::C;
       break;
     default:
       errs() << "currently Gollvm is not supported on architecture "
