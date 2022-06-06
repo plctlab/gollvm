@@ -33,7 +33,8 @@ namespace goBackendUnitTests {
 
 // All supported calling conventions
 auto CConvs = testing::Values(llvm::CallingConv::X86_64_SysV,
-                              llvm::CallingConv::ARM_AAPCS);
+                              llvm::CallingConv::ARM_AAPCS,
+                              llvm::CallingConv::C);
 
 // Convert llvm::CallingConv::ID to its coresponding string name.
 std::string ccName(llvm::CallingConv::ID);
