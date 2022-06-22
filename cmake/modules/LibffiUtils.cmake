@@ -64,6 +64,8 @@ function(setup_libffi libffi_srcroot)
   # Set target based on arch.
   if(HAVE_64BIT AND ${llarch} STREQUAL "aarch64")
     set(TARGET AARCH64)
+  elseif(HAVE_64BIT AND ${llarch} STREQUAL "riscv64")
+      set(TARGET RISCV64)
   elseif(HAVE_64BIT)
     set(TARGET X86_64)
   else()
