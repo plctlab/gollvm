@@ -536,6 +536,8 @@ string(APPEND baseopts "${GOLLVM_EXTRA_CFLAGS} ")
 # specific architectural features).
 if (${goarch} STREQUAL "arm64")
   set_source_files_properties(${libgo_csrcroot}/runtime/aeshash.c PROPERTIES COMPILE_FLAGS "-march=armv8-a+crypto")
+elseif (${goarch} STREQUAL "riscv64")
+    set_source_files_properties(${libgo_csrcroot}/runtime/aeshash.c PROPERTIES COMPILE_FLAGS "-march=rv64gc")
 else()
   set_source_files_properties(${libgo_csrcroot}/runtime/aeshash.c PROPERTIES COMPILE_FLAGS "-maes -mssse3")
 endif()
