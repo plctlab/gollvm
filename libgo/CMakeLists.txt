@@ -501,7 +501,7 @@ list(APPEND runtimecfiles
   "go/syscall/signame.c"
   "go/syscall/wait.c")
 
-if (${goarch} STREQUAL "x86_64")
+if (${goarch} STREQUAL "amd64")
   list(APPEND runtimecfiles
     "go/golang.org/x/sys/cpu/cpu_gccgo_x86.c")
 endif()
