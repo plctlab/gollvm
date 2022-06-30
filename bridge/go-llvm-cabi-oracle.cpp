@@ -139,7 +139,7 @@ class EightByteInfo {
   void incorporateScalar(Btype *bt);
   void determineABITypesForARM_AAPCS();
   void determineABITypesForX86_64_SysV();
-  void determineAPITypesForRISC_V();
+  void determineABITypesForRISC_V();
   TypeManager *tm() const { return typeManager_; }
 };
 
@@ -160,7 +160,7 @@ EightByteInfo::EightByteInfo(Btype *bt, TypeManager *tmgr)
     }
     break;
   case llvm::CallingConv::C:
-    determineAPITypesForRISC_V();
+    determineABITypesForRISC_V();
     break;
   default:
     llvm::errs() << "unsupported llvm::CallingConv::ID " << cconv << "\n";
@@ -516,7 +516,7 @@ void EightByteInfo::determineABITypesForX86_64_SysV()
 // the correct alignment. Work around this by checking for such situations
 // and promoting the type of the first EBR to 64 bits.
 //
-void EightByteInfo::determineAPITypesForRISC_V() {
+void EightByteInfo::determineABITypesForRISC_V() {
   // In the direct case, ebrs_.size() cannot be greater than 2 because parameters
   // larger than 16 bytes are passed indirectly.
   assert(ebrs_.size() <= 2);
@@ -527,10 +527,14 @@ void EightByteInfo::determineAPITypesForRISC_V() {
       continue;
     TypDisp regionDisp = ebr.getRegionTypDisp();
     if (regionDisp == FlavSSE) {
-      // Case 1: two floats -> vector
-      if (ebr.types.size() == 2)
-        ebr.abiDirectType = tm()->llvmTwoFloatVecType();
-      else if (ebr.types.size() == 1) {
+      // Case 1: two floats -> two float structs
+      if (ebr.types.size() == 2) {
+        assert(ebr.types[0] == tm()->llvmDoubleType() ||
+               ebr.types[0] == tm()->llvmFloatType() ||
+               ebr.types[1] == tm()->llvmDoubleType() ||
+               ebr.types[1] == tm()->llvmFloatType());
+        ebr.abiDirectType = tm()->makeLLVMTwoElementStructType(ebr.types[0], ebr.types[1]);
+      } else if (ebr.types.size() == 1) {
         assert(ebr.types[0] == tm()->llvmDoubleType() ||
                ebr.types[0] == tm()->llvmFloatType());
         ebr.abiDirectType = ebr.types[0];
@@ -1349,7 +1353,7 @@ CABIParamInfo CABIOracleRISC_V::analyzeABIParam(Btype *paramType, ABIState &stat
 }
 
 CABIParamInfo CABIOracleRISC_V::analyzeABIReturn(Btype *resultType,
-                                                    ABIState &state) {
+                                                 ABIState &state) {
   llvm::Type *rtyp = resultType->type();
   CABIParamDisp rdisp =
       (rtyp == tm_->llvmVoidType() ? ParmIgnore
