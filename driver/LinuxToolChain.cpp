@@ -59,12 +59,18 @@ Linux::Linux(gollvm::driver::Driver &driver,
   // Program paths
   pathlist &ppaths = programPaths();
   auto ftrip = gccDetector_.foundTriple().str();
+  for (const auto &path : driver.args().getAllArgValues(gollvm::options::OPT_L)) {
+    ppaths.push_back(path);
+  }
   addIfPathExists(ppaths, llvm::Twine(gccDetector_.getParentLibPath() +
                                       "/../../" + ftrip +
                                       "/bin").str());
 
   // File paths
   pathlist &fpaths = filePaths();
+  for (const auto &path : driver.args().getAllArgValues(gollvm::options::OPT_I)) {
+    fpaths.push_back(path);
+  }
   addIfPathExists(fpaths, gccDetector_.getLibPath());
   std::string osLibDir = getOSLibDir(targetTriple).str();
   if (!driver.sysRoot().empty())
