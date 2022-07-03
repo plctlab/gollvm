@@ -22,8 +22,12 @@ if(NOT GOLLVM_USE_SPLIT_STACK)
 endif()
 
 # Driver for compiling *.go files.
-get_target_property(driverdir llvm-goc RUNTIME_OUTPUT_DIRECTORY)
-set(gollvm_driver "${driverdir}/llvm-goc")
+if (GOLLVM_DRIVER_DIR)
+  set(gollvm_driver "${GOLLVM_DRIVER_DIR}/llvm-goc")
+else()
+  get_target_property(driverdir llvm-goc RUNTIME_OUTPUT_DIRECTORY)
+  set(gollvm_driver "${driverdir}/llvm-goc")
+endif()
 set(gocompiler ${gollvm_driver})
 
 set(cmd_srcroot "${GOLLVM_SOURCE_DIR}/gofrontend/libgo/go/cmd")

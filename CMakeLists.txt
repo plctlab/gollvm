@@ -39,13 +39,28 @@ set(EXTCC "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
 
 set(gollvm_binroot "${CMAKE_CURRENT_BINARY_DIR}")
 
+# Set MPN path according to the target processor
+string(REGEX REPLACE "-" " " lht_components ${LLVM_DEFAULT_TARGET_TRIPLE})
+separate_arguments(lht_components)
+list(GET lht_components 0 llarch)
+
+if( ${llarch} STREQUAL "x86_64" )
+  set(MPN_PATH "x86_64 generic")
+elseif( ${llarch} STREQUAL "aarch64" )
+  set(MPN_PATH "arm64 generic")
+elseif( ${llarch} STREQUAL "riscv64" )
+  set(MPN_PATH "riscv generic")
+else()
+  message(SEND_ERROR "Arch ${llarch} not yet supported")
+endif()
+
 externalproject_add(libgmp
   URL https://gmplib.org/download/gmp/gmp-6.2.0.tar.bz2 https://mirrors.kernel.org/gnu/gmp/gmp-6.2.0.tar.bz2
   URL_MD5 c24161e0dd44cae78cd5f67193492a21
   DOWNLOAD_DIR ${CMAKE_CURRENT_BINARY_DIR}/external-downloads
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/gmp-build
   SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/gmp
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${EXTINSTALLDIR} ${EXTCPPFLAGS} ${EXTLDFLAGS} ${EXTCC}
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${EXTINSTALLDIR} ${EXTCPPFLAGS} ${EXTLDFLAGS} ${EXTCC} --build=${LLVM_HOST_TRIPLE} --host=${LLVM_DEFAULT_TARGET_TRIPLE} MPN_PATH=${MPN_PATH}
   BUILD_COMMAND make -j${PROCESSOR_COUNT} install
   LOG_CONFIGURE 1
   LOG_BUILD 1
@@ -59,7 +74,7 @@ externalproject_add(libmpfr
   DOWNLOAD_DIR ${CMAKE_CURRENT_BINARY_DIR}/external-downloads
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/mpfr
   SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/mpfr
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --with-gmp=${CMAKE_CURRENT_BINARY_DIR}/external/gmp --prefix=${EXTINSTALLDIR} ${EXTCPPFLAGS} ${EXTLDFLAGS} ${EXTCC}
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --with-gmp=${CMAKE_CURRENT_BINARY_DIR}/external/gmp --prefix=${EXTINSTALLDIR} ${EXTCPPFLAGS} ${EXTLDFLAGS} ${EXTCC} -build=${LLVM_HOST_TRIPLE} --host=${LLVM_DEFAULT_TARGET_TRIPLE}
   BUILD_COMMAND make -j${PROCESSOR_COUNT} install
   LOG_CONFIGURE 1
   LOG_BUILD 1
@@ -74,7 +89,7 @@ externalproject_add(libmpc
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/mpc
   SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/mpc
   PREFIX ${EXTINSTALLDIR}
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --with-gmp=${CMAKE_CURRENT_BINARY_DIR}/external/gmp --with-mpfr=${CMAKE_CURRENT_BINARY_DIR}/external/mpfr --prefix=${EXTINSTALLDIR} ${EXTCPPFLAGS} ${EXTLDFLAGS} ${EXTCC}
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --with-gmp=${CMAKE_CURRENT_BINARY_DIR}/external/gmp --with-mpfr=${CMAKE_CURRENT_BINARY_DIR}/external/mpfr --prefix=${EXTINSTALLDIR} ${EXTCPPFLAGS} ${EXTLDFLAGS} ${EXTCC} -build=${LLVM_HOST_TRIPLE} --host=${LLVM_DEFAULT_TARGET_TRIPLE}
   BUILD_COMMAND make -j${PROCESSOR_COUNT} install
   LOG_CONFIGURE 1
   LOG_BUILD 1

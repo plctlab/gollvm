@@ -80,9 +80,14 @@ function(add_go_package pkgpath dest)
   endif()
 
   # Command to build *.gox.tmp
+  set(objcopycommand "objcopy")
+  if (GOLLVM_DRIVER_DIR)
+    set(objcopycommand "${LLVM_DEFAULT_TARGET_TRIPLE}-objcopy")
+  endif()
+
   add_custom_command(
     OUTPUT "${package_goxtmp}"
-    COMMAND objcopy -j .go_export "${package_ofile}" "${package_goxtmp}"
+    COMMAND "${objcopycommand}" -j .go_export "${package_ofile}" "${package_goxtmp}"
     DEPENDS ${package_ofile} ${package_picofile}
     COMMENT "Building Go exports file for package '${pkgpath}'"
     VERBATIM)
