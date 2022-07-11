@@ -14,12 +14,15 @@ namespace goBackendUnitTests {
 
 std::string ccName(llvm::CallingConv::ID cc) {
   assert(cc == llvm::CallingConv::X86_64_SysV ||
-         cc == llvm::CallingConv::ARM_AAPCS);
+         cc == llvm::CallingConv::ARM_AAPCS ||
+         cc == llvm::CallingConv::C);
   switch (cc) {
   case llvm::CallingConv::X86_64_SysV:
     return "X8664SysV";
   case llvm::CallingConv::ARM_AAPCS:
     return "ARMAAPCS";
+  case llvm::CallingConv::C:
+    return "C";
   default:
     return "";
   }

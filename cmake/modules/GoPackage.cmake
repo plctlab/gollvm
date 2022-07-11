@@ -80,12 +80,21 @@ function(add_go_package pkgpath dest)
   endif()
 
   # Command to build *.gox.tmp
-  add_custom_command(
-    OUTPUT "${package_goxtmp}"
-    COMMAND objcopy -j .go_export "${package_ofile}" "${package_goxtmp}"
-    DEPENDS ${package_ofile} ${package_picofile}
-    COMMENT "Building Go exports file for package '${pkgpath}'"
-    VERBATIM)
+  if (GOLLVM_DRIVER_DIR)
+    add_custom_command(
+            OUTPUT "${package_goxtmp}"
+            COMMAND ${LLVM_DEFAULT_TARGET_TRIPLE}-objcopy -j .go_export "${package_ofile}" "${package_goxtmp}"
+            DEPENDS ${package_ofile} ${package_picofile}
+            COMMENT "Building Go exports file for package '${pkgpath}'"
+            VERBATIM)
+  else()
+    add_custom_command(
+      OUTPUT "${package_goxtmp}"
+      COMMAND objcopy -j .go_export "${package_ofile}" "${package_goxtmp}"
+      DEPENDS ${package_ofile} ${package_picofile}
+      COMMENT "Building Go exports file for package '${pkgpath}'"
+      VERBATIM)
+  endif()
 
   # Command to update *.gox if different from *.gox.tmp
   add_custom_command(

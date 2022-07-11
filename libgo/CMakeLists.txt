@@ -72,8 +72,12 @@ add_subdirectory(godumpspec)
 #......................................................................
 
 # Driver for compiling *.go files.
-get_target_property(driverdir llvm-goc RUNTIME_OUTPUT_DIRECTORY)
-set(gollvm_driver "${driverdir}/llvm-goc")
+if (GOLLVM_DRIVER_DIR)
+  set(gollvm_driver "${GOLLVM_DRIVER_DIR}/llvm-goc")
+else()
+  get_target_property(driverdir llvm-goc RUNTIME_OUTPUT_DIRECTORY)
+  set(gollvm_driver "${driverdir}/llvm-goc")
+endif()
 set(gocompiler ${gollvm_driver})
 
 # Pick up any extra Go compiler flags specified via
@@ -272,8 +276,12 @@ set(gensysinfodotgo "${libgo_binroot}/gen-sysinfo.go")
 set(gensysinfotmp "${libgo_binroot}/gen-sysinfo.go.tmp")
 set(gensysinfomacrotmp "${libgo_binroot}/sysinfo.macros.txt")
 set(gensysinfoobject "${libgo_binroot}/sysinfo.o")
-get_target_property(godumpspecdir llvm-godumpspec RUNTIME_OUTPUT_DIRECTORY)
-set(godumpspecexec "${godumpspecdir}/llvm-godumpspec")
+if (GOLLVM_DRIVER_DIR)
+  set(godumpspecexec "${GOLLVM_DRIVER_DIR}/llvm-godumpspec")
+else()
+  get_target_property(godumpspecdir llvm-godumpspec RUNTIME_OUTPUT_DIRECTORY)
+  set(godumpspecexec "${godumpspecdir}/llvm-godumpspec")
+endif()
 set(sysinfoc "${libgo_srcroot}/sysinfo.c")
 set(sysinfoflags ${basedefines})
 list(APPEND sysinfoflags "-I${libgo_binroot}" "-I${libgo_binroot}/runtime")
@@ -501,7 +509,7 @@ list(APPEND runtimecfiles
   "go/syscall/signame.c"
   "go/syscall/wait.c")
 
-if (NOT ${goarch} STREQUAL "arm64")
+if (${goarch} STREQUAL "amd64")
   list(APPEND runtimecfiles
     "go/golang.org/x/sys/cpu/cpu_gccgo_x86.c")
 endif()
@@ -521,6 +529,11 @@ endforeach()
 # go-wrapper.c is not in gofrontend/libgo
 list(APPEND runtimecpaths "${GOLLVM_SOURCE_DIR}/libgo/runtime/go-wrappers.c")
 
+# Force -funwind-tables to be used for all C files for RISC-V
+if (${goarch} STREQUAL "riscv64")
+  string(APPEND GOLLVM_EXTRA_CFLAGS "-funwind-tables ")
+endif()
+
 # Compiler flags for C files in the runtime.
 set(baseopts "-g -Wno-zero-length-array ")
 if(GOLLVM_USE_SPLIT_STACK)
@@ -536,6 +549,8 @@ string(APPEND baseopts "${GOLLVM_EXTRA_CFLAGS} ")
 # specific architectural features).
 if (${goarch} STREQUAL "arm64")
   set_source_files_properties(${libgo_csrcroot}/runtime/aeshash.c PROPERTIES COMPILE_FLAGS "-march=armv8-a+crypto")
+elseif (${goarch} STREQUAL "riscv64")
+    set_source_files_properties(${libgo_csrcroot}/runtime/aeshash.c PROPERTIES COMPILE_FLAGS "-march=rv64gc")
 else()
   set_source_files_properties(${libgo_csrcroot}/runtime/aeshash.c PROPERTIES COMPILE_FLAGS "-maes -mssse3")
 endif()

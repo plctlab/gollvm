@@ -218,6 +218,9 @@ void Linker::addLDM(llvm::opt::ArgStringList &cmdArgs)
       // Currently only support linux/arm64
       cmdArgs.push_back("aarch64linux");
       break;
+    case llvm::Triple::riscv64:
+      cmdArgs.push_back("elf64lriscv");
+      break;
     default:
       // unhandled architecture
       cmdArgs.push_back("%unknown%");

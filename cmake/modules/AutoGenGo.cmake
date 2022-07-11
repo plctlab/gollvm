@@ -365,7 +365,11 @@ function(mkzdefaultcc package outfile ccpath cxxpath)
   CMAKE_PARSE_ARGUMENTS(ARG "EXPORT" "" "" ${ARGN})
 
   # Construct default driver path
-  set(driverpath "${GOLLVM_INSTALL_DIR}/bin/llvm-goc")
+  if (GOLLVM_DRIVER_DIR)
+    set(driverpath "${GOLLVM_DRIVER_DIR}/bin/llvm-goc")
+  else()
+    set(driverpath "${GOLLVM_INSTALL_DIR}/bin/llvm-goc")
+  endif()
 
   file(REMOVE ${outfile})
   file(WRITE ${outfile} "package ${package}\n\n")
