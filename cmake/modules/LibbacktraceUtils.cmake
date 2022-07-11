@@ -19,7 +19,7 @@ function(setup_libbacktrace)
   endif()
 
   if(NOT HAVE_MMAP)
-#    message(SEND_ERROR "Support for mmap() is required -- setup failed.")
+    message(SEND_ERROR "Support for mmap() is required -- setup failed.")
   endif()
   set(BACKTRACE_USES_MALLOC 0)
 
