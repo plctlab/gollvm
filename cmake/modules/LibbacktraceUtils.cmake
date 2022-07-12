@@ -71,6 +71,10 @@ function(setup_libbacktrace)
   if(GOLLVM_USE_SPLIT_STACK)
     string(APPEND libbacktraceflags " -fsplit-stack ${CFPROTECTION_WORKAROUND}")
   endif()
+  # Force -funwind-tables to be used for RISC-V so .eh_frame exists for stack unwinding.
+  if (${goarch} STREQUAL "riscv64")
+    string(APPEND libbacktraceflags " -funwind-tables")
+  endif()
   string(APPEND libbacktraceflags " ${GOLLVM_EXTRA_CFLAGS}")
 
   # Object libraries built from libbacktrace sources.
