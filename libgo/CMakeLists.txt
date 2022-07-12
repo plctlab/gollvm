@@ -542,7 +542,7 @@ endforeach()
 if (${goarch} STREQUAL "riscv64")
   string(APPEND baseopts " -funwind-tables")
 endif()
-string(APPEND baseopts "${GOLLVM_EXTRA_CFLAGS} ")
+string(APPEND baseopts " ${GOLLVM_EXTRA_CFLAGS}")
 
 # Special flags required for aeshash.c (functions in this file are called
 # only when running on the proper architecture, so it is safe to ask for
