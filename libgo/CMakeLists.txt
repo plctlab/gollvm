@@ -531,7 +531,7 @@ list(APPEND runtimecpaths "${GOLLVM_SOURCE_DIR}/libgo/runtime/go-wrappers.c")
 
 # Force -funwind-tables to be used for all C files for RISC-V
 if (${goarch} STREQUAL "riscv64")
-  string(APPEND GOLLVM_EXTRA_CFLAGS "-funwind-tables ")
+  string(APPEND GOLLVM_EXTRA_CFLAGS " -funwind-tables ")
 endif()
 
 # Compiler flags for C files in the runtime.
