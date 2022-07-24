@@ -901,9 +901,10 @@ bool CompileGoImpl::invokeBackEnd(const Action &jobAction)
       createTargetTransformInfoWrapperPass(target_->getTargetIRAnalysis()));
   createPasses(modulePasses, functionPasses);
 
-  // Disable inlining getg in some cases on x86_64.
-  if (triple_.getArch() == llvm::Triple::x86_64) {
-      modulePasses.add(createGoSafeGetgPass());
+  // Disable inlining getg in some cases on x86_64 and RISC-V.
+  if (triple_.getArch() == llvm::Triple::x86_64 ||
+      triple_.getArch() == llvm::Triple::riscv64) {
+    modulePasses.add(createGoSafeGetgPass());
   }
 
   // Add statepoint insertion pass to the end of optimization pipeline,
