@@ -90,6 +90,10 @@ function(setup_libffi libffi_srcroot)
   if(GOLLVM_USE_SPLIT_STACK)
     string(APPEND libffiflags " -fsplit-stack ${CFPROTECTION_WORKAROUND}")
   endif()
+  # Force -funwind-tables to be used for RISC-V so .eh_frame exists for stack unwinding.
+  if (${goarch} STREQUAL "riscv64")
+    string(APPEND libffiflags " -funwind-tables")
+  endif()
   string(APPEND libffiflags " ${GOLLVM_EXTRA_CFLAGS}")
 
   # Copy correct version of ffitarget.h to libgo binary root.
