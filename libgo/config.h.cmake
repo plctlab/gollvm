@@ -5,6 +5,7 @@
 #include "llvm/Config/config.h"
 
 /* Header files */
+#cmakedefine HAVE_FCNTL_H
 #cmakedefine HAVE_LINUX_ETHER_H
 #cmakedefine HAVE_LINUX_FILTER_H
 #cmakedefine HAVE_LINUX_FS_H
@@ -161,5 +162,8 @@
 
 /* Define to 1 if you have the `strsignal' function. */
 #cmakedefine HAVE_STRSIGNAL 1
+
+/* Define to 1 if you have the `loff_t` type. */
+#cmakedefine HAVE_LOFF_T
 
 #endif
