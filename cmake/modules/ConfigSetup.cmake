@@ -64,6 +64,7 @@ check_symbol_exists(memmem "string.h" HAVE_MEMMEM)
 check_symbol_exists(strsignal "string.h" HAVE_STRSIGNAL)
 
 # Checks for include files
+check_include_file(fcntl.h HAVE_FCNTL_H)
 check_include_file(dlfcn.h HAVE_DLFCN_H)
 check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(link.h HAVE_LINK_H)
@@ -119,6 +120,9 @@ check_type_size("double" SIZEOF_DOUBLE)
 check_type_size("long double" HAVE_LONG_DOUBLE)
 check_type_size("long double" SIZEOF_LONG_DOUBLE)
 check_type_size("void*" SIZEOF_VOID_P)
+set(CMAKE_EXTRA_INCLUDE_FILES fcntl.h)
+check_type_size("loff_t" HAVE_LOFF_T)
+set(CMAKE_EXTRA_INCLUDE_FILES)
 
 # Check for various include files
 check_include_file(alloca.h HAVE_ALLOCA_H)
