@@ -186,7 +186,8 @@ bool Driver::supportedAsmOptions()
       continue;
     }
     if (value.startswith("-compress-debug-sections") ||
-        value.startswith("--compress-debug-sections")) {
+        value.startswith("--compress-debug-sections") ||
+        value.startswith("-march")) {
       continue;
     }
     // Unrecognized -Wa,... option

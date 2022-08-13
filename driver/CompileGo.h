@@ -43,6 +43,9 @@ class CompileGo : public InternalTool {
   std::unique_ptr<CompileGoImpl> impl_;
 };
 
+bool setupArch(llvm::opt::Arg *cpuarg, std::string &cpu, std::string &attrs,
+               llvm::Triple triple_, const char *progname_);
+
 } // end namespace driver
 } // end namespace gollvm
 

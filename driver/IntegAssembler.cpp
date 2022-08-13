@@ -20,6 +20,7 @@
 #include "GollvmOptions.h"
 #include "GollvmConfig.h"
 #include "GollvmPasses.h"
+#include "CompileGo.h"
 
 #include "Action.h"
 #include "Artifact.h"
@@ -178,22 +179,14 @@ bool IntegAssemblerImpl::invokeAssembler()
   assert(MRI && "Unable to create target register info!");
 
   MCTargetOptions MCOptions;
+  if (triple_.getArch() == llvm::Triple::riscv64)
+    MCOptions.ABIName = "lp64d";
   std::unique_ptr<MCAsmInfo> MAI(
       TheTarget->createMCAsmInfo(*MRI, Trip, MCOptions));
   assert(MAI && "Unable to create target asm info!");
 
   // Note: -Xassembler and -Wa, options should already have been
   // examined at this point.
-
-  // FIXME: no support yet for -march (bring over from CompileGo.cpp)
-  opt::Arg *cpuarg = args_.getLastArg(gollvm::options::OPT_march_EQ);
-  if (cpuarg != nullptr) {
-    errs() << progname_ << ": internal error: option '"
-           <<  cpuarg->getAsString(args_)
-           << "' not yet implemented in integrated assembler\n";
-    assert(false);
-    return false;
-  }
 
   // Support for compressed debug.
   llvm::DebugCompressionType CompressDebugSections =
@@ -208,6 +201,8 @@ bool IntegAssemblerImpl::invokeAssembler()
   // Build up the feature string from the target feature list.
   std::string FS;
   std::string CPU;
+  opt::Arg *cpuarg = args_.getLastArg(gollvm::options::OPT_march_EQ);
+  setupArch(cpuarg, CPU, FS, triple_, progname_);
   std::unique_ptr<MCStreamer> Str;
   std::unique_ptr<MCInstrInfo> MCII(TheTarget->createMCInstrInfo());
   std::unique_ptr<MCSubtargetInfo> STI(

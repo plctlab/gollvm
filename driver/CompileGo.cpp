@@ -469,8 +469,25 @@ bool CompileGoImpl::setup(const Action &jobAction)
   Options.AllowFPOpFusion = *dofuse;
 
   // Support -march
-  std::string cpuStr;
   opt::Arg *cpuarg = args_.getLastArg(gollvm::options::OPT_march_EQ);
+  if (!setupArch(cpuarg, targetCpuAttr_, targetFeaturesAttr_, triple_, progname_))
+    return false;
+
+  // Create target machine
+  Optional<llvm::CodeModel::Model> CM = None;
+  target_.reset(
+      TheTarget->createTargetMachine(triple_.getTriple(),
+                                     targetCpuAttr_, targetFeaturesAttr_,
+                                     Options, driver_.reconcileRelocModel(),
+                                     CM, cgolvl_));
+  assert(target_.get() && "Could not allocate target machine!");
+
+  return true;
+}
+
+bool setupArch(opt::Arg *cpuarg, std::string &cpu, std::string &attrs,
+               Triple triple_, const char *progname_) {
+  std::string cpuStr;
   if (cpuarg != nullptr) {
     std::string val(cpuarg->getValue());
     if (val == "native")
@@ -510,18 +527,8 @@ bool CompileGoImpl::setup(const Action &jobAction)
       return false;
     }
   }
-  targetCpuAttr_ = cpuAttrs->cpu;
-  targetFeaturesAttr_ = cpuAttrs->attrs;
-
-  // Create target machine
-  Optional<llvm::CodeModel::Model> CM = None;
-  target_.reset(
-      TheTarget->createTargetMachine(triple_.getTriple(),
-                                     targetCpuAttr_, targetFeaturesAttr_,
-                                     Options, driver_.reconcileRelocModel(),
-                                     CM, cgolvl_));
-  assert(target_.get() && "Could not allocate target machine!");
-
+  cpu = cpuAttrs->cpu;
+  attrs = cpuAttrs->attrs;
   return true;
 }
 
