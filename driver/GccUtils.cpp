@@ -190,6 +190,16 @@ bool GCCInstallationDetector::selectLibDirs(state &s)
       s.triple.setTriple(triple_.str());
       s.suffixes = {""};
       break;
+    case llvm::Triple::riscv64:
+      s.tripleAliases = {
+        triple_.str(),
+        "riscv64-linux-gnu", "riscv64-unknown-linux-gnu"
+      };
+      s.libdirs.push_back("/lib");
+      s.libdirs.push_back("/lib64");
+      s.triple.setTriple(triple_.str());
+      s.suffixes = {""};
+      break;
     default:
       llvm::errs() << "error: unsupported triple "
                    << triple_.str() << " in " << __FUNCTION__ << "\n";

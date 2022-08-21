@@ -141,6 +141,10 @@ std::string Linux::getDynamicLinker(const llvm::opt::ArgList &args)
       Loader = "ld-linux-x86-64.so.2";
       break;
     }
+    case llvm::Triple::riscv64:
+      LibDir = "lib";
+      Loader = "ld-linux-riscv64-lp64d.so.1";
+      break;
   }
   return "/" + LibDir + "/" + Loader;
 }
