@@ -205,9 +205,10 @@ endmacro()
 #   * root of libgo source
 
 function(emitversionstring outfile srcroot)
+  string(TIMESTAMP BDATE "%Y%m%d")
   file(STRINGS "${srcroot}/../VERSION" rawver)
   string(STRIP ${rawver} ver)
-  file(APPEND ${outfile} "\"${ver} gollvm LLVM ${LLVM_VERSION_MAJOR}.${LLVM_VERSION_MINOR}.${LLVM_VERSION_PATCH}${LLVM_VERSION_SUFFIX}\"")
+  file(APPEND ${outfile} "\"${ver} gollvm LLVM ${LLVM_VERSION_MAJOR}.${LLVM_VERSION_MINOR}.${LLVM_VERSION_PATCH}${LLVM_VERSION_SUFFIX} ${BDATE} (experimental)\"")
 endfunction()
 
 #----------------------------------------------------------------------
@@ -308,7 +309,8 @@ function(mkobjabi outfile binroot srcroot)
 endfunction()
 
 #----------------------------------------------------------------------
-# Emit 'goroot.go', containing the default GOROOT setting.
+# Emit 'goroot.go', containing the default GOROOT setting
+# and the build version.
 #
 # Unnamed parameters:
 #
@@ -321,6 +323,14 @@ function(mkgoroot outfile binroot srcroot)
   file(REMOVE ${outfile})
   file(WRITE ${outfile} "package runtime\n\n")
   file(APPEND ${outfile} "var defaultGOROOT = \"${GOLLVM_INSTALL_DIR}\"\n")
+
+  # For gccgo, at the point where goroot.go is emitted, the compiler
+  # has already been built; with cmake all of this is happening well before
+  # the driver is available (refer also to the corresponding code in
+  # Driver.cpp).
+  file(APPEND ${outfile} "var buildVersion = ")
+  emitversionstring(${outfile} ${srcroot})
+  file(APPEND ${outfile} "\n")
 
 endfunction()
 
@@ -365,7 +375,11 @@ function(mkzdefaultcc package outfile ccpath cxxpath)
   CMAKE_PARSE_ARGUMENTS(ARG "EXPORT" "" "" ${ARGN})
 
   # Construct default driver path
-  set(driverpath "${GOLLVM_INSTALL_DIR}/bin/llvm-goc")
+  if (GOLLVM_DRIVER_DIR)
+    set(driverpath "${GOLLVM_DRIVER_DIR}/bin/llvm-goc")
+  else()
+    set(driverpath "${GOLLVM_INSTALL_DIR}/bin/llvm-goc")
+  endif()
 
   file(REMOVE ${outfile})
   file(WRITE ${outfile} "package ${package}\n\n")

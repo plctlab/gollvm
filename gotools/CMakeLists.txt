@@ -22,8 +22,12 @@ if(NOT GOLLVM_USE_SPLIT_STACK)
 endif()
 
 # Driver for compiling *.go files.
-get_target_property(driverdir llvm-goc RUNTIME_OUTPUT_DIRECTORY)
-set(gollvm_driver "${driverdir}/llvm-goc")
+if (GOLLVM_DRIVER_DIR)
+  set(gollvm_driver "${GOLLVM_DRIVER_DIR}/llvm-goc")
+else()
+  get_target_property(driverdir llvm-goc RUNTIME_OUTPUT_DIRECTORY)
+  set(gollvm_driver "${driverdir}/llvm-goc")
+endif()
 set(gocompiler ${gollvm_driver})
 
 set(cmd_srcroot "${GOLLVM_SOURCE_DIR}/gofrontend/libgo/go/cmd")
@@ -164,12 +168,13 @@ add_custom_target(
        "${cmd_srcroot}/go/internal:src/cmd/go"
        "${cmd_srcroot}/internal:src/cmd"
        "${cmd_srcroot}/go/testdata:src/cmd/go"
-       "${libgo_srcroot}/go/golang.org/x/mod:src/cmd/vendor/golang.org/x"
-       "${libgo_srcroot}/go/golang.org/x/crypto:src/cmd/vendor/golang.org/x"
-       "${libgo_srcroot}/go/golang.org/x/xerrors:src/cmd/vendor/golang.org/x"
+       "${libgo_srcroot}/go/golang.org/x:src/cmd/vendor/golang.org"
     "COPYFILES"
        "${libgo_binroot}/zdefaultcc.go:src/cmd/go/internal/cfg/"
        "${libgo_binroot}/objabi.go:src/cmd/internal/objabi"
+       "${cmd_srcroot}/go.mod:src/cmd"
+       "${cmd_srcroot}/go.sum:src/cmd"
+       "${cmd_srcroot}/vendor/modules.txt:src/cmd/vendor"
     "TIMEOUT" ${cmdgo_check_timeout}
     "GOC" "${rungoc}"
     "BINDIR" ${gotools_binroot}
@@ -193,7 +198,11 @@ add_custom_target(
         "${cmd_srcroot}/vet:src/cmd"
         "${cmd_srcroot}/internal/objabi:src/cmd/internal"
         "${libgo_srcroot}/go/golang.org/x/tools:src/cmd/vendor/golang.org/x"
-    "COPYFILES" "${libgo_binroot}/objabi.go:src/cmd/internal/objabi"
+    "COPYFILES"
+        "${libgo_binroot}/objabi.go:src/cmd/internal/objabi"
+        "${cmd_srcroot}/go.mod:src/cmd"
+        "${cmd_srcroot}/go.sum:src/cmd"
+        "${cmd_srcroot}/vendor/modules.txt:src/cmd/vendor"
     "TIMEOUT" ${default_check_timeout}
     "GOC" "${rungoc}"
     "BINDIR" ${gotools_binroot}
@@ -212,6 +221,7 @@ add_custom_target(
     "SUBDIR" "misc/cgo/test"
     "LOGFILE" "${gotools_binroot}/cmd_cgo-testlog"
     "COPYDIRS" "${libgo_srcroot}/misc/cgo/test:misc/cgo"
+    "COPYFILES" "${libgo_srcroot}/misc/go.mod:misc/cgo"
     "TIMEOUT" ${default_check_timeout}
     "GOC" "${rungoc}"
     "SETENV" "GOTRACEBACK=2"
@@ -231,6 +241,7 @@ add_custom_target(
     "SUBDIR" "misc/cgo/testcarchive"
     "LOGFILE" "${gotools_binroot}/cmd_carchive-testlog"
     "COPYDIRS" "${libgo_srcroot}/misc/cgo/testcarchive:misc/cgo"
+    "COPYFILES" "${libgo_srcroot}/misc/go.mod:misc/cgo"
     "TIMEOUT" ${default_check_timeout}
     "GOC" "${rungoc}"
     "CC" "${runcc}"

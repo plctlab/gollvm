@@ -59,12 +59,18 @@ Linux::Linux(gollvm::driver::Driver &driver,
   // Program paths
   pathlist &ppaths = programPaths();
   auto ftrip = gccDetector_.foundTriple().str();
+  for (const auto &path : driver.args().getAllArgValues(gollvm::options::OPT_L)) {
+    ppaths.push_back(path);
+  }
   addIfPathExists(ppaths, llvm::Twine(gccDetector_.getParentLibPath() +
                                       "/../../" + ftrip +
                                       "/bin").str());
 
   // File paths
   pathlist &fpaths = filePaths();
+  for (const auto &path : driver.args().getAllArgValues(gollvm::options::OPT_I)) {
+    fpaths.push_back(path);
+  }
   addIfPathExists(fpaths, gccDetector_.getLibPath());
   std::string osLibDir = getOSLibDir(targetTriple).str();
   if (!driver.sysRoot().empty())
@@ -73,7 +79,7 @@ Linux::Linux(gollvm::driver::Driver &driver,
                                       "/../" + ftrip).str());
   addIfPathExists(fpaths, llvm::Twine(osLibDir).str());
   addIfPathExists(fpaths, llvm::Twine(osLibDir + "/" + ftrip).str());
-  if (this->distro_ == distro::DistroArchLinux)
+  if (this->distro_ == distro::DistroArchLinux || this->distro_ == distro::DistroRedhat)
     addIfPathExists(fpaths, llvm::Twine("/usr/" + osLibDir).str());
 
   // Include program and file paths in verbose output.
@@ -135,6 +141,10 @@ std::string Linux::getDynamicLinker(const llvm::opt::ArgList &args)
       Loader = "ld-linux-x86-64.so.2";
       break;
     }
+    case llvm::Triple::riscv64:
+      LibDir = "lib";
+      Loader = "ld-linux-riscv64-lp64d.so.1";
+      break;
   }
   return "/" + LibDir + "/" + Loader;
 }
