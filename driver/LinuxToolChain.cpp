@@ -34,9 +34,10 @@ static void addIfPathExists(pathlist &paths, const llvm::Twine &path)
 
 static llvm::StringRef getOSLibDir(const llvm::Triple &triple)
 {
-  // multilib is not supported on major aarch64/arm64 linux distributions
+  // multilib is not supported on major aarch64/arm64 and riscv64 linux distributions
   // subject to change when more scenarios to be taken into account
-  if (triple.getArch() == llvm::Triple::aarch64)
+  if (triple.getArch() == llvm::Triple::aarch64 ||
+      triple.getArch() == llvm::Triple::riscv64)
     return "lib";
   // x86 uses the lib32 variant, unlike other archs.
   if (triple.getArch() == llvm::Triple::x86)
@@ -59,22 +60,19 @@ Linux::Linux(gollvm::driver::Driver &driver,
   // Program paths
   pathlist &ppaths = programPaths();
   auto ftrip = gccDetector_.foundTriple().str();
-  for (const auto &path : driver.args().getAllArgValues(gollvm::options::OPT_L)) {
-    ppaths.push_back(path);
-  }
   addIfPathExists(ppaths, llvm::Twine(gccDetector_.getParentLibPath() +
                                       "/../../" + ftrip +
                                       "/bin").str());
 
   // File paths
   pathlist &fpaths = filePaths();
-  for (const auto &path : driver.args().getAllArgValues(gollvm::options::OPT_I)) {
-    fpaths.push_back(path);
-  }
   addIfPathExists(fpaths, gccDetector_.getLibPath());
   std::string osLibDir = getOSLibDir(targetTriple).str();
-  if (!driver.sysRoot().empty())
+  if (!driver.sysRoot().empty()) {
+    addIfPathExists(fpaths, llvm::Twine(driver.sysRoot() + "/usr/"
+                                        + osLibDir).str());
     osLibDir = driver.sysRoot() + "/" + osLibDir;
+  }
   addIfPathExists(fpaths, llvm::Twine(gccDetector_.getParentLibPath() +
                                       "/../" + ftrip).str());
   addIfPathExists(fpaths, llvm::Twine(osLibDir).str());
@@ -145,6 +143,10 @@ std::string Linux::getDynamicLinker(const llvm::opt::ArgList &args)
       LibDir = "lib";
       Loader = "ld-linux-riscv64-lp64d.so.1";
       break;
+  }
+  if (auto *Arg = args.getLastArg(gollvm::options::OPT_sysroot_EQ)) {
+    std::string Sysroot = Arg->getValue();
+    return Sysroot + "/" + LibDir + "/" + Loader;
   }
   return "/" + LibDir + "/" + Loader;
 }
