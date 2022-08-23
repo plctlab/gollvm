@@ -159,7 +159,7 @@ cmake -G Ninja -S $SOURCE -B build-riscv \
     -DLLVM_TABLEGEN=$PWD/build-x86/bin/llvm-tblgen \
     -DGOLLVM_DRIVER_DIR=$PWD/build-x86/bin \
     -DGOLLVM_EXTRA_GOCFLAGS="--target=$TRIPLE \
-                             --gcc-toolchain=$RISCV/bin \
+                             --gcc-toolchain=$RISCV/ \
                              --sysroot=$RISCV/sysroot" \
     -DGOLLVM_USE_SPLIT_STACK=OFF \
     -DCMAKE_C_FLAGS=-latomic \
