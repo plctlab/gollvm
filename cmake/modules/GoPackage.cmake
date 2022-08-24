@@ -80,19 +80,17 @@ function(add_go_package pkgpath dest)
   endif()
 
   # Command to build *.gox.tmp
+  set(objcopycommand "objcopy")
   if (GOLLVM_DRIVER_DIR)
-    get_filename_component(c_compiler_dir ${CMAKE_C_COMPILER} DIRECTORY)
-    set(gollvm_objcopy ${c_compiler_dir}/${LLVM_DEFAULT_TARGET_TRIPLE}-objcopy)
-  else()
-    set(gollvm_objcopy objcopy)
+    set(objcopycommand "${LLVM_DEFAULT_TARGET_TRIPLE}-objcopy")
   endif()
-  add_custom_command(
-    OUTPUT "${package_goxtmp}"
-    COMMAND ${gollvm_objcopy} -j .go_export "${package_ofile}" "${package_goxtmp}"
-    DEPENDS ${package_ofile} ${package_picofile}
-    COMMENT "Building Go exports file for package '${pkgpath}'"
-    VERBATIM)
 
+  add_custom_command(
+  OUTPUT "${package_goxtmp}"
+  COMMAND "${objcopycommand}" -j .go_export "${package_ofile}" "${package_goxtmp}"
+  DEPENDS ${package_ofile} ${package_picofile}
+  COMMENT "Building Go exports file for package '${pkgpath}'"
+  VERBATIM)
   # Command to update *.gox if different from *.gox.tmp
   add_custom_command(
     OUTPUT "${package_goxfile}"

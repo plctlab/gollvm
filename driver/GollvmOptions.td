@@ -506,7 +506,8 @@ def disable_llvm_passes : Flag<["-"], "disable-llvm-passes">,
            "frontend by not running any LLVM passes at all">;
 
 def gcc_toolchain_EQ : Joined<["--"], "gcc-toolchain=">, Flags<[DriverOption]>,
-  HelpText<"Use the gcc toolchain at the given directory">;
+  HelpText<"Use the gcc toolchain at the given directory, the directory typically contains"
+           "‘lib{,32,64}/gcc{,-cross}/$triple’ and ‘include’">;
 
 def enable_gc_EQ : Joined<["-"], "enable-gc=">,
   HelpText<"Enable stack map generation">;
