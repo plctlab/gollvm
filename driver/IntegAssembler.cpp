@@ -22,6 +22,7 @@
 #include "GollvmPasses.h"
 
 #include "Action.h"
+#include "ArchCpuSetup.h"
 #include "Artifact.h"
 #include "Driver.h"
 #include "ToolChain.h"
@@ -185,16 +186,6 @@ bool IntegAssemblerImpl::invokeAssembler()
   // Note: -Xassembler and -Wa, options should already have been
   // examined at this point.
 
-  // FIXME: no support yet for -march (bring over from CompileGo.cpp)
-  opt::Arg *cpuarg = args_.getLastArg(gollvm::options::OPT_march_EQ);
-  if (cpuarg != nullptr) {
-    errs() << progname_ << ": internal error: option '"
-           <<  cpuarg->getAsString(args_)
-           << "' not yet implemented in integrated assembler\n";
-    assert(false);
-    return false;
-  }
-
   // Support for compressed debug.
   llvm::DebugCompressionType CompressDebugSections =
       llvm::DebugCompressionType::None;
@@ -208,6 +199,8 @@ bool IntegAssemblerImpl::invokeAssembler()
   // Build up the feature string from the target feature list.
   std::string FS;
   std::string CPU;
+  opt::Arg *cpuarg = args_.getLastArg(gollvm::options::OPT_march_EQ);
+  setupArchCpu(cpuarg, CPU, FS, triple_, progname_);
   std::unique_ptr<MCStreamer> Str;
   std::unique_ptr<MCInstrInfo> MCII(TheTarget->createMCInstrInfo());
   std::unique_ptr<MCSubtargetInfo> STI(

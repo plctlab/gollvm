@@ -26,6 +26,7 @@ include_directories(${EXTINSTALLDIR}/include)
 # A library containing driver utility code.
 add_llvm_library(LLVMDriverUtils
   Action.cpp
+  ArchCpuSetup.cpp
   Artifact.cpp
   Command.cpp
   Compilation.cpp
