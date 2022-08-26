@@ -22,6 +22,7 @@
 #include "GollvmPasses.h"
 
 #include "Action.h"
+#include "ArchCpuSetup.h"
 #include "Artifact.h"
 #include "Driver.h"
 #include "ToolChain.h"
@@ -470,7 +471,7 @@ bool CompileGoImpl::setup(const Action &jobAction)
 
   // Support -march
   opt::Arg *cpuarg = args_.getLastArg(gollvm::options::OPT_march_EQ);
-  if (!setupArch(cpuarg, targetCpuAttr_, targetFeaturesAttr_, triple_, progname_))
+  if (!setupArchCpu(cpuarg, targetCpuAttr_, targetFeaturesAttr_, triple_, progname_))
     return false;
 
   // Create target machine
@@ -482,53 +483,6 @@ bool CompileGoImpl::setup(const Action &jobAction)
                                      CM, cgolvl_));
   assert(target_.get() && "Could not allocate target machine!");
 
-  return true;
-}
-
-bool setupArch(opt::Arg *cpuarg, std::string &cpu, std::string &attrs,
-               Triple triple_, const char *progname_) {
-  std::string cpuStr;
-  if (cpuarg != nullptr) {
-    std::string val(cpuarg->getValue());
-    if (val == "native")
-      cpuStr = sys::getHostCPUName().str();
-    else
-      cpuStr = cpuarg->getValue();
-  }
-
-  // Locate correct entry in architectures table for this triple
-  const gollvm::arch::CpuAttrs *cpuAttrs = nullptr;
-  for (unsigned i = 0; gollvm::arch::triples[i].cpuattrs != nullptr; i += 1) {
-    if (!strcmp(triple_.str().c_str(), gollvm::arch::triples[i].triple)) {
-      cpuAttrs = gollvm::arch::triples[i].cpuattrs;
-      break;
-    }
-  }
-  if (cpuAttrs == nullptr) {
-    errs() << progname_ << ": unable to determine target CPU features for "
-           << "target " << triple_.str() << "\n";
-    return false;
-  }
-
-  // If no CPU specified, use first entry. Otherwise look for CPU name.
-  if (!cpuStr.empty()) {
-    bool found = false;
-    while (strlen(cpuAttrs->cpu) != 0) {
-      if (!strcmp(cpuAttrs->cpu, cpuStr.c_str())) {
-        // found
-        found = true;
-        break;
-      }
-      cpuAttrs++;
-    }
-    if (!found) {
-      errs() << progname_ << ": invalid setting for -march:"
-             << " -- unable to identify CPU '" << cpuStr << "'\n";
-      return false;
-    }
-  }
-  cpu = cpuAttrs->cpu;
-  attrs = cpuAttrs->attrs;
   return true;
 }
 

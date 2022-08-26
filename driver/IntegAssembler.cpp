@@ -23,6 +23,7 @@
 #include "CompileGo.h"
 
 #include "Action.h"
+#include "ArchCpuSetup.h"
 #include "Artifact.h"
 #include "Driver.h"
 #include "ToolChain.h"
@@ -202,7 +203,7 @@ bool IntegAssemblerImpl::invokeAssembler()
   std::string FS;
   std::string CPU;
   opt::Arg *cpuarg = args_.getLastArg(gollvm::options::OPT_march_EQ);
-  setupArch(cpuarg, CPU, FS, triple_, progname_);
+  setupArchCpu(cpuarg, CPU, FS, triple_, progname_);
   std::unique_ptr<MCStreamer> Str;
   std::unique_ptr<MCInstrInfo> MCII(TheTarget->createMCInstrInfo());
   std::unique_ptr<MCSubtargetInfo> STI(
