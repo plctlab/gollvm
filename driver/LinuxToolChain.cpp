@@ -144,10 +144,6 @@ std::string Linux::getDynamicLinker(const llvm::opt::ArgList &args)
       Loader = "ld-linux-riscv64-lp64d.so.1";
       break;
   }
-  if (auto *Arg = args.getLastArg(gollvm::options::OPT_sysroot_EQ)) {
-    std::string Sysroot = Arg->getValue();
-    return Sysroot + "/" + LibDir + "/" + Loader;
-  }
   return "/" + LibDir + "/" + Loader;
 }
 
