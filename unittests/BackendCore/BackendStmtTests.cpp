@@ -15,7 +15,7 @@ using namespace goBackendUnitTests;
 
 namespace {
 
-class BackendStmtTests : public testing::TestWithParam<llvm::CallingConv::ID> {
+class BackendStmtTests : public testing::TestWithParam<gollvm::driver::CallingConvId> {
 };
 
 INSTANTIATE_TEST_SUITE_P(

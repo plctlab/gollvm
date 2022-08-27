@@ -32,12 +32,12 @@
 namespace goBackendUnitTests {
 
 // All supported calling conventions
-auto CConvs = testing::Values(llvm::CallingConv::X86_64_SysV,
-                              llvm::CallingConv::ARM_AAPCS,
-                              llvm::CallingConv::C);
+auto CConvs = testing::Values(gollvm::driver::CallingConvId::X86_64_SysV,
+                              gollvm::driver::CallingConvId::ARM_AAPCS,
+                              gollvm::driver::CallingConvId::RISCV64_C);
 
-// Convert llvm::CallingConv::ID to its coresponding string name.
-std::string ccName(llvm::CallingConv::ID);
+// Convert gollvm::driver::CallingConvId to its coresponding string name.
+std::string ccName(gollvm::driver::CallingConvId);
 
 // Return string representation of LLVM value (handling null ptr)
 std::string repr(llvm::Value *val);
@@ -159,7 +159,7 @@ class FcnTestHarness {
  public:
   // Create test harness. If name specified, then create a
   // default function "fcnName(i1, i2 int32) int64".
-  FcnTestHarness(llvm::CallingConv::ID cconv, const char *fcnName = nullptr);
+  FcnTestHarness(gollvm::driver::CallingConvId cconv, const char *fcnName = nullptr);
   ~FcnTestHarness();
 
   // Create function to work on

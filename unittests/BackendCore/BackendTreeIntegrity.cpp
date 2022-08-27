@@ -16,7 +16,7 @@ using namespace goBackendUnitTests;
 namespace {
 
 class BackendTreeIntegrity
-    : public testing::TestWithParam<llvm::CallingConv::ID> {};
+    : public testing::TestWithParam<gollvm::driver::CallingConvId> {};
 
 INSTANTIATE_TEST_SUITE_P(
     UnitTest, BackendTreeIntegrity,

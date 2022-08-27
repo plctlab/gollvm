@@ -45,7 +45,7 @@ Llvm_backend::Llvm_backend(llvm::LLVMContext &context,
                            Llvm_linemap *linemap,
                            unsigned addrspace,
                            llvm::Triple triple,
-                           llvm::CallingConv::ID cconv)
+                           gollvm::driver::CallingConvId cconv)
     : TypeManager(context, cconv, addrspace)
     , context_(context)
     , module_(module)
@@ -83,17 +83,17 @@ Llvm_backend::Llvm_backend(llvm::LLVMContext &context,
   if (!module_) {
     ownModule_.reset(new llvm::Module("gomodule", context));
     switch (cconv) {
-      case llvm::CallingConv::X86_64_SysV:
+      case gollvm::driver::CallingConvId::X86_64_SysV:
         ownModule_->setTargetTriple("x86_64-unknown-linux-gnu");
         ownModule_->setDataLayout("e-m:e-i64:64-f80:128-n8:16:32:64-S128");
         triple_ = llvm::Triple("x86_64-unknown-linux-gnu");
         break;
-      case llvm::CallingConv::ARM_AAPCS:
+      case gollvm::driver::CallingConvId::ARM_AAPCS:
         ownModule_->setTargetTriple("aarch64-unknown-linux-gnu");
         ownModule_->setDataLayout("e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128");
         triple_ = llvm::Triple("aarch64-unknown-linux-gnu");
         break;
-      case llvm::CallingConv::C:
+      case gollvm::driver::CallingConvId::RISCV64_C:
         ownModule_->setTargetTriple("riscv64-unknown-linux-gnu");
         ownModule_->setDataLayout("e-m:e-p:64:64-i64:64-i128:128-n64-S128");
         triple_ = llvm::Triple("riscv64-unknown-linux-gnu");
@@ -4163,6 +4163,6 @@ const char *go_localize_identifier(const char *ident) { return ident; }
 
 // Return a new backend generator.
 
-Backend *go_get_backend(llvm::LLVMContext &context, llvm::CallingConv::ID cconv) {
+Backend *go_get_backend(llvm::LLVMContext &context, gollvm::driver::CallingConvId cconv) {
   return new Llvm_backend(context, nullptr, nullptr, 0, llvm::Triple(), cconv);
 }

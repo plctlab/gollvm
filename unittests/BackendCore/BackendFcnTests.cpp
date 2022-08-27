@@ -16,7 +16,7 @@ using namespace goBackendUnitTests;
 
 namespace {
 
-class BackendFcnTests : public testing::TestWithParam<llvm::CallingConv::ID> {};
+class BackendFcnTests : public testing::TestWithParam<gollvm::driver::CallingConvId> {};
 
 INSTANTIATE_TEST_SUITE_P(
     UnitTest, BackendFcnTests,

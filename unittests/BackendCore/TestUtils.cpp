@@ -12,17 +12,17 @@
 
 namespace goBackendUnitTests {
 
-std::string ccName(llvm::CallingConv::ID cc) {
-  assert(cc == llvm::CallingConv::X86_64_SysV ||
-         cc == llvm::CallingConv::ARM_AAPCS ||
-         cc == llvm::CallingConv::C);
+std::string ccName(gollvm::driver::CallingConvId cc) {
+  assert(cc == gollvm::driver::CallingConvId::X86_64_SysV ||
+         cc == gollvm::driver::CallingConvId::ARM_AAPCS ||
+         cc == gollvm::driver::CallingConvId::RISCV64_C);
   switch (cc) {
-  case llvm::CallingConv::X86_64_SysV:
+  case gollvm::driver::CallingConvId::X86_64_SysV:
     return "X8664SysV";
-  case llvm::CallingConv::ARM_AAPCS:
+  case gollvm::driver::CallingConvId::ARM_AAPCS:
     return "ARMAAPCS";
-  case llvm::CallingConv::C:
-    return "C";
+  case gollvm::driver::CallingConvId::RISCV64_C:
+    return "RISCV64C";
   default:
     return "";
   }
@@ -387,7 +387,7 @@ std::string repr(Bnode *node) {
   return trimsp(vis.result());
 }
 
-FcnTestHarness::FcnTestHarness(llvm::CallingConv::ID cconv, const char *fcnName)
+FcnTestHarness::FcnTestHarness(gollvm::driver::CallingConvId cconv, const char *fcnName)
     : context_()
     , be_(new Llvm_backend(context_, nullptr, nullptr, 0, llvm::Triple(), cconv))
     , func_(nullptr)

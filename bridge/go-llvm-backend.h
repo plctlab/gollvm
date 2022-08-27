@@ -19,6 +19,6 @@
 
 class Backend;
 
-extern Backend *go_get_backend(llvm::LLVMContext &Context, llvm::CallingConv::ID cconv);
+extern Backend *go_get_backend(llvm::LLVMContext &Context, gollvm::driver::CallingConvId cconv);
 
 #endif // !defined(GO_LLVM_BACKEND_H)

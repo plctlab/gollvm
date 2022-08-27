@@ -18,7 +18,7 @@ using namespace goBackendUnitTests;
 namespace {
 
 class BackendPointerExprTests
-    : public testing::TestWithParam<llvm::CallingConv::ID> {};
+    : public testing::TestWithParam<gollvm::driver::CallingConvId> {};
 
 INSTANTIATE_TEST_SUITE_P(
     UnitTest, BackendPointerExprTests,

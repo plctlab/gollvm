@@ -61,4 +61,4 @@ add_dependencies(LLVMCppGoFrontEnd libmpfr libmpc libgmp)
 
 include_directories(${EXTINSTALLDIR}/include)
 include_directories(${GOFRONTEND_SOURCE_DIR})
-
+include_directories(${DRIVER_UTILS_SOURCE_DIR})
