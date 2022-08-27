@@ -18,3 +18,5 @@ add_llvm_library(LLVMCppGoPasses
 
   DEPENDS intrinsics_gen
 )
+
+include_directories(${DRIVER_UTILS_SOURCE_DIR})

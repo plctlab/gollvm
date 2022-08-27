@@ -20,8 +20,8 @@
 #ifndef LLVMGOFRONTEND_GO_LLVM_CABI_ORACLE_H
 #define LLVMGOFRONTEND_GO_LLVM_CABI_ORACLE_H
 
+#include "CallingConv.h"
 #include "go-llvm-btype.h"
-#include "llvm/IR/CallingConv.h"
 
 class TypeManager;
 class EightByteInfo;
@@ -198,7 +198,7 @@ class CABIOracle {
   TypeManager *typeManager_;
   std::vector<CABIParamInfo> infov_;
   bool followsCabi_;
-  llvm::CallingConv::ID ccID_;
+  gollvm::driver::CallingConvId ccID_;
   std::unique_ptr<CABIOracleArgumentAnalyzer> cc_;
 
   // The main entry for cabi analysis.

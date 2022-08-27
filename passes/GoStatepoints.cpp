@@ -12,6 +12,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "CallingConv.h"
 #include "GoStatepoints.h"
 #include "GoStackMap.h"
 #include "GollvmPasses.h"
@@ -35,7 +36,6 @@
 #include "llvm/IR/Argument.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/CallingConv.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DataLayout.h"

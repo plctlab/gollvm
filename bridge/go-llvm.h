@@ -82,7 +82,7 @@ public:
                unsigned addrspace,
                llvm::Triple triple,
                /* Temporarily set the parameter as optional to workaround the unit tests. */
-               llvm::CallingConv::ID cconv=llvm::CallingConv::X86_64_SysV);
+               gollvm::driver::CallingConvId cconv=gollvm::driver::CallingConvId::X86_64_SysV);
   ~Llvm_backend();
 
   // Types.

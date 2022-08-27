@@ -20,7 +20,7 @@ namespace {
 // changed). Perhaps there is some other way to verify this
 // functionality.
 
-class BackendDebugEmit : public testing::TestWithParam<llvm::CallingConv::ID> {
+class BackendDebugEmit : public testing::TestWithParam<gollvm::driver::CallingConvId> {
 };
 
 INSTANTIATE_TEST_SUITE_P(
@@ -60,7 +60,7 @@ TEST_P(BackendDebugEmit, TestSimpleDecl) {
 
 TEST(BackendDebugEmit, TestSimpleDecl2Amd64) {
   // Test that parameters of empty function are handled correctly.
-  FcnTestHarness h(llvm::CallingConv::X86_64_SysV);
+  FcnTestHarness h(gollvm::driver::CallingConvId::X86_64_SysV);
   Llvm_backend *be = h.be();
   Btype *bi64t = be->integer_type(false, 64);
   Btype *bst = mkBackendStruct(be, bi64t, "f1",
@@ -89,7 +89,7 @@ TEST(BackendDebugEmit, TestSimpleDecl2Amd64) {
 
 TEST(BackendDebugEmit, TestSimpleDecl2Arm64) {
   // Test that parameters of empty function are handled correctly.
-  FcnTestHarness h(llvm::CallingConv::ARM_AAPCS);
+  FcnTestHarness h(gollvm::driver::CallingConvId::ARM_AAPCS);
   Llvm_backend *be = h.be();
   Btype *bi64t = be->integer_type(false, 64);
   Btype *bst = mkBackendStruct(be, bi64t, "f1", bi64t, "f2", bi64t, "f3",

@@ -17,7 +17,7 @@ using namespace goBackendUnitTests;
 
 namespace {
 
-class BackendCallTests : public testing::TestWithParam<llvm::CallingConv::ID> {
+class BackendCallTests : public testing::TestWithParam<gollvm::driver::CallingConvId> {
 };
 
 INSTANTIATE_TEST_SUITE_P(
@@ -235,7 +235,7 @@ TEST_P(BackendCallTests, CallToNoReturnFunction) {
 // expected result. However, the processing method of static link and dynamic
 // link is the same, but the instruction is slightly different.
 TEST(BackendCallTests, TestMakeGetgDynamicArm64) {
-  FcnTestHarness h(llvm::CallingConv::ARM_AAPCS, "foo");
+  FcnTestHarness h(gollvm::driver::CallingConvId::ARM_AAPCS, "foo");
   Llvm_backend *be = h.be();
   be->module().setPICLevel(llvm::PICLevel::BigPIC);
   Bfunction *func = h.func();
