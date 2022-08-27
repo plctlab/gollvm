@@ -82,7 +82,9 @@ function(add_go_package pkgpath dest)
   # Command to build *.gox.tmp
   set(objcopycommand "objcopy")
   if (GOLLVM_DRIVER_DIR)
-    set(objcopycommand "${LLVM_DEFAULT_TARGET_TRIPLE}-objcopy")
+    # Assume objcopy and the compiler driver are placed in the same directory
+    get_filename_component(c_compiler_dir ${CMAKE_C_COMPILER} DIRECTORY)
+    set(objcopycommand ${c_compiler_dir}/${LLVM_DEFAULT_TARGET_TRIPLE}-objcopy)
   endif()
 
   add_custom_command(
