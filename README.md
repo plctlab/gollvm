@@ -16,6 +16,7 @@ source tree, then within the LLVM tree you check out additional git repos.
  * [Invoking cmake and ninja](#cmakeninja)
  * [Installing gollvm](#installing)
  * [Using an installed copy of gollvm](#using)
+ * [Crosscompiling gollvm](#crosscompiling)
  * [Information for gollvm developers](#developers)
 
 [FAQ](#FAQ)
@@ -118,6 +119,58 @@ Programs build with the Gollvm Go compiler default to shared linkage, meaning th
 % go run himom.go
 hi mom!
 %
+```
+
+## Crosscompiling gollvm  <a name="crosscompiling"></a>
+You need a working version of gollvm on host system to cross compile. The following script will build and install gollvm on a cross compile system.
+
+```
+#!/bin/bash
+set -e
+mkdir -p build
+cd build
+
+RISCV=$HOME/toolchain
+SOURCE=$HOME/llvm-project/llvm
+TRIPLE=riscv64-unknown-linux-gnu
+INSTALL=/tmp/gollvm-install
+
+# host
+cmake -G Ninja -S $SOURCE -B build-x86 \
+    -DCMAKE_INSTALL_PREFIX=install-x86 \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DLLVM_USE_LINKER=bfd \
+    -DGOLLVM_DEFAULT_LINKER=bfd \
+    -DLLVM_TARGET_ARCH="X86-64,RISCV64" \
+    -DLLVM_TARGETS_TO_BUILD="X86;RISCV"
+
+# crosscompile
+cmake -G Ninja -S $SOURCE -B build-riscv \
+    -DCMAKE_INSTALL_PREFIX=$INSTALL \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DLLVM_USE_LINKER=bfd \
+    -DGOLLVM_DEFAULT_LINKER=bfd \
+    -DCMAKE_CROSSCOMPILING=True \
+    -DLLVM_TARGET_ARCH=RISCV64 \
+    -DLLVM_DEFAULT_TARGET_TRIPLE=$TRIPLE \
+    -DLLVM_TARGETS_TO_BUILD=RISCV \
+    -DCMAKE_C_COMPILER=$RISCV/bin/$TRIPLE-gcc \
+    -DCMAKE_CXX_COMPILER=$RISCV/bin/$TRIPLE-g++ \
+    -DLLVM_TABLEGEN=$PWD/build-x86/bin/llvm-tblgen \
+    -DGOLLVM_DRIVER_DIR=$PWD/build-x86/bin \
+    -DGOLLVM_EXTRA_GOCFLAGS="--target=$TRIPLE \
+                             --gcc-toolchain=$RISCV/ \
+                             --sysroot=$RISCV/sysroot" \
+    -DGOLLVM_USE_SPLIT_STACK=OFF \
+    -DCMAKE_C_FLAGS=-latomic \
+    -DCMAKE_CXX_FLAGS=-latomic
+
+
+# build gollvm crosscompiler
+ninja -C build-x86 llvm-goc llvm-goc-token llvm-godumpspec
+
+# cross compile gollvm, go tools and install
+ninja -C build-riscv install-gollvm
 ```
 
 # Information for gollvm developers <a name="developers"></a>
@@ -269,7 +322,7 @@ inlining, vectorization, register allocation, etc.
 
 ## Which architectures and operating systems are supported for gollvm? <a name="supported"></a>
 
-Gollvm is currently supported only for x86_64 and aarch64 Linux.
+Gollvm is currently supported only for x86_64, aarch64 and riscv64 Linux.
 
 ## How does the gollvm runtime differ from the main Go runtime?  <a name="runtimediffs"></a>
 
