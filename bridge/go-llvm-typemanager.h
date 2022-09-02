@@ -20,7 +20,7 @@
 #include "namegen.h"
 #include "backend.h"
 
-#include "llvm/IR/CallingConv.h"
+#include "CallingConv.h"
 
 namespace llvm {
 class DataLayout;
@@ -43,7 +43,7 @@ enum PTDisp { Concrete, Placeholder };
 class TypeManager {
  public:
   TypeManager(llvm::LLVMContext &context,
-              llvm::CallingConv::ID cconv,
+              gollvm::driver::CallingConvId cconv,
               unsigned addrspace);
   ~TypeManager();
 
@@ -246,7 +246,7 @@ class TypeManager {
   const llvm::DataLayout *datalayout() const { return datalayout_; }
 
   // Calling convention
-  llvm::CallingConv::ID callingConv() const { return cconv_; }
+  gollvm::driver::CallingConvId callingConv() const { return cconv_; }
 
   // For named types, this returns the declared type name. If a type
   // is unnamed, then it returns a stringified representation of the
@@ -287,7 +287,7 @@ class TypeManager {
   // Context information needed for the LLVM backend.
   llvm::LLVMContext &context_;
   const llvm::DataLayout *datalayout_;
-  llvm::CallingConv::ID cconv_;
+  gollvm::driver::CallingConvId cconv_;
   unsigned addressSpace_;
   unsigned traceLevel_;
 

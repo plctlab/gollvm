@@ -15,12 +15,12 @@ using namespace goBackendUnitTests;
 
 namespace {
 
-class BackendStmtTests : public testing::TestWithParam<llvm::CallingConv::ID> {
+class BackendStmtTests : public testing::TestWithParam<gollvm::driver::CallingConvId> {
 };
 
 INSTANTIATE_TEST_SUITE_P(
     UnitTest, BackendStmtTests,
-    goBackendUnitTests::CConvs,
+    goBackendUnitTests::cconvs(),
     [](const testing::TestParamInfo<BackendStmtTests::ParamType> &info) {
       std::string name = goBackendUnitTests::ccName(info.param);
       return name;

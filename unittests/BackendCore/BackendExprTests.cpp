@@ -17,12 +17,12 @@ using namespace goBackendUnitTests;
 
 namespace {
 
-class BackendExprTests : public testing::TestWithParam<llvm::CallingConv::ID> {
+class BackendExprTests : public testing::TestWithParam<gollvm::driver::CallingConvId> {
 };
 
 INSTANTIATE_TEST_SUITE_P(
     UnitTest, BackendExprTests,
-    goBackendUnitTests::CConvs,
+    goBackendUnitTests::cconvs(),
     [](const testing::TestParamInfo<BackendExprTests::ParamType> &info) {
       std::string name = goBackendUnitTests::ccName(info.param);
       return name;
@@ -1429,7 +1429,7 @@ TEST_P(BackendExprTests, TestConditionalExpression2) {
 }
 
 TEST(BackendExprTests, TestConditionalExpression3Amd64) {
-  FcnTestHarness h(llvm::CallingConv::X86_64_SysV);
+  FcnTestHarness h(gollvm::driver::CallingConvId::X86_64_SysV);
   Llvm_backend *be = h.be();
   Btype *bi32t = be->integer_type(false, 32);
   Btype *abt = be->array_type(bi32t, mkInt64Const(be, int64_t(16)));
@@ -1494,7 +1494,7 @@ TEST(BackendExprTests, TestConditionalExpression3Amd64) {
 }
 
 TEST(BackendExprTests, TestConditionalExpression3Arm64) {
-  FcnTestHarness h(llvm::CallingConv::ARM_AAPCS);
+  FcnTestHarness h(gollvm::driver::CallingConvId::ARM_AAPCS);
   Llvm_backend *be = h.be();
   Btype *bi32t = be->integer_type(false, 32);
   Btype *abt = be->array_type(bi32t, mkInt64Const(be, int64_t(16)));

@@ -23,7 +23,7 @@
 #include "llvm/IR/Type.h"
 
 TypeManager::TypeManager(llvm::LLVMContext &context,
-                         llvm::CallingConv::ID conv,
+                         gollvm::driver::CallingConvId conv,
                          unsigned addrspace)
     : context_(context)
     , datalayout_(nullptr)

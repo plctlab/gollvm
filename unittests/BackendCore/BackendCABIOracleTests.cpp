@@ -19,11 +19,11 @@ using namespace goBackendUnitTests;
 namespace {
 
 class BackendCABIOracleTests
-    : public testing::TestWithParam<llvm::CallingConv::ID> {};
+    : public testing::TestWithParam<gollvm::driver::CallingConvId> {};
 
 INSTANTIATE_TEST_SUITE_P(
     UnitTest, BackendCABIOracleTests,
-    goBackendUnitTests::CConvs,
+    goBackendUnitTests::cconvs(),
     [](const testing::TestParamInfo<BackendCABIOracleTests::ParamType> &info) {
       std::string name = goBackendUnitTests::ccName(info.param);
       return name;
@@ -72,7 +72,7 @@ TEST_P(BackendCABIOracleTests, Basic) {
 TEST(BackendCABIOracleTests, ExtendedAmd64) {
   LLVMContext C;
   std::unique_ptr<Llvm_backend> bep(
-      new Llvm_backend(C, nullptr, nullptr, 0, llvm::Triple(), llvm::CallingConv::X86_64_SysV));
+      new Llvm_backend(C, nullptr, nullptr, 0, llvm::Triple(), gollvm::driver::CallingConvId::X86_64_SysV));
   Llvm_backend *be = bep.get();
 
   Btype *bi8t = be->integer_type(false, 8);
@@ -256,7 +256,7 @@ TEST(BackendCABIOracleTests, ExtendedAmd64) {
 TEST(BackendCABIOracleTests, ExtendedArm64) {
   LLVMContext C;
   std::unique_ptr<Llvm_backend> bep(
-      new Llvm_backend(C, nullptr, nullptr, 0, llvm::Triple(), llvm::CallingConv::ARM_AAPCS));
+      new Llvm_backend(C, nullptr, nullptr, 0, llvm::Triple(), gollvm::driver::CallingConvId::ARM_AAPCS));
   Llvm_backend *be = bep.get();
 
   Btype *bi8t = be->integer_type(false, 8);
@@ -439,7 +439,7 @@ TEST(BackendCABIOracleTests, ExtendedArm64) {
 }
 
 TEST(BackendCABIOracleTests, RecursiveCall1Amd64) {
-  FcnTestHarness h(llvm::CallingConv::X86_64_SysV);
+  FcnTestHarness h(gollvm::driver::CallingConvId::X86_64_SysV);
   Llvm_backend *be = h.be();
 
   // type s1 struct {
@@ -564,7 +564,7 @@ TEST(BackendCABIOracleTests, RecursiveCall1Amd64) {
 }
 
 TEST(BackendCABIOracleTests, RecursiveCall1Arm64) {
-  FcnTestHarness h(llvm::CallingConv::ARM_AAPCS);
+  FcnTestHarness h(gollvm::driver::CallingConvId::ARM_AAPCS);
   Llvm_backend *be = h.be();
 
   // type s1 struct {
@@ -686,7 +686,7 @@ TEST(BackendCABIOracleTests, RecursiveCall1Arm64) {
 }
 
 TEST(BackendCABIOracleTests, PassAndReturnArraysAmd64) {
-  FcnTestHarness h(llvm::CallingConv::X86_64_SysV);
+  FcnTestHarness h(gollvm::driver::CallingConvId::X86_64_SysV);
   Llvm_backend *be = h.be();
 
   Btype *bf32t = be->float_type(32);
@@ -733,7 +733,7 @@ TEST(BackendCABIOracleTests, PassAndReturnArraysAmd64) {
 }
 
 TEST(BackendCABIOracleTests, PassAndReturnArraysArm64) {
-  FcnTestHarness h(llvm::CallingConv::ARM_AAPCS);
+  FcnTestHarness h(gollvm::driver::CallingConvId::ARM_AAPCS);
   Llvm_backend *be = h.be();
 
   Btype *bf32t = be->float_type(32);
@@ -850,7 +850,7 @@ TEST_P(BackendCABIOracleTests, CallBuiltinFunction) {
 }
 
 TEST(BackendCABIOracleTests, PassAndReturnComplexAmd64) {
-  FcnTestHarness h(llvm::CallingConv::X86_64_SysV);
+  FcnTestHarness h(gollvm::driver::CallingConvId::X86_64_SysV);
   Llvm_backend *be = h.be();
 
   Btype *bc64t = be->complex_type(64);
@@ -926,7 +926,7 @@ TEST(BackendCABIOracleTests, PassAndReturnComplexAmd64) {
 }
 
 TEST(BackendCABIOracleTests, PassAndReturnComplexArm64) {
-  FcnTestHarness h(llvm::CallingConv::ARM_AAPCS);
+  FcnTestHarness h(gollvm::driver::CallingConvId::ARM_AAPCS);
   Llvm_backend *be = h.be();
 
   Btype *bc64t = be->complex_type(64);

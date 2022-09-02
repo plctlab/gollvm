@@ -24,6 +24,7 @@ endfunction()
 include_directories(${EXTINSTALLDIR}/include)
 include_directories(${BRIDGE_SOURCE_DIR})
 include_directories(${GOFRONTEND_SOURCE_DIR})
+include_directories(${DRIVER_UTILS_SOURCE_DIR})
 
 add_subdirectory(DriverUtils)
 add_subdirectory(Driver)

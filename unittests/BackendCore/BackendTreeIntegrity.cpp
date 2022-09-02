@@ -16,11 +16,11 @@ using namespace goBackendUnitTests;
 namespace {
 
 class BackendTreeIntegrity
-    : public testing::TestWithParam<llvm::CallingConv::ID> {};
+    : public testing::TestWithParam<gollvm::driver::CallingConvId> {};
 
 INSTANTIATE_TEST_SUITE_P(
     UnitTest, BackendTreeIntegrity,
-    goBackendUnitTests::CConvs,
+    goBackendUnitTests::cconvs(),
     [](const testing::TestParamInfo<BackendTreeIntegrity::ParamType> &info) {
       std::string name = goBackendUnitTests::ccName(info.param);
       return name;

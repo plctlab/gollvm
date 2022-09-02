@@ -24,6 +24,7 @@
 #include "Action.h"
 #include "ArchCpuSetup.h"
 #include "Artifact.h"
+#include "CallingConv.h"
 #include "Driver.h"
 #include "ToolChain.h"
 
@@ -105,7 +106,7 @@ class CompileGoImpl {
   Triple triple_;
   const ToolChain &toolchain_;
   Driver &driver_;
-  CallingConv::ID cconv_;
+  CallingConvId cconv_;
   LLVMContext context_;
   const char *progname_;
   std::string executablePath_;
@@ -154,7 +155,7 @@ CompileGoImpl::CompileGoImpl(CompileGo &cg,
       triple_(tc.driver().triple()),
       toolchain_(tc),
       driver_(tc.driver()),
-      cconv_(CallingConv::MaxID),
+      cconv_(CallingConvId::MaxID),
       progname_(tc.driver().progname()),
       executablePath_(executablePath),
       args_(tc.driver().args()),
@@ -723,10 +724,13 @@ void CompileGoImpl::setCConv()
   assert(triple_.getArch() != Triple::UnknownArch);
   switch (triple_.getArch()) {
     case Triple::x86_64:
-      cconv_ = CallingConv::X86_64_SysV;
+      cconv_ = CallingConvId::X86_64_SysV;
       break;
     case Triple::aarch64:
-      cconv_ = CallingConv::ARM_AAPCS;
+      cconv_ = CallingConvId::ARM_AAPCS;
+      break;
+    case Triple::riscv64:
+      cconv_ = CallingConvId::RISCV64_C;
       break;
     default:
       errs() << "currently Gollvm is not supported on architecture "
