@@ -87,6 +87,7 @@ void Add512(vstuff *v) {
 var supportedTriples []string = []string{
 	"x86_64-unknown-linux-gnu",
 	"aarch64-unknown-linux-gnu",
+	"riscv64-unknown-linux-gnu",
 }
 
 var (
