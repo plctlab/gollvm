@@ -55,7 +55,7 @@ bool ReadStdin::performAction(Compilation &compilation,
   if (mustBeEmpty_ && stdinBuf->getBufferSize() != 0) {
     llvm::errs() << compilation.driver().progname()
                  << ": unsupported language for -x, "
-                 << "stdin be empty\n";
+                 << "stdin must be empty\n";
     return false;
   }
 

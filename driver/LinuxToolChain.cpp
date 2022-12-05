@@ -16,6 +16,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "CompileGo.h"
+#include "DummyCompileC.h"
 #include "IntegAssembler.h"
 #include "Driver.h"
 #include "GnuTools.h"
@@ -99,6 +100,11 @@ Linux::~Linux()
 
 Tool *Linux::buildCompiler()
 {
+  llvm::opt::Arg *xarg = driver().args().getLastArg(gollvm::options::OPT_x);
+  if (xarg != nullptr && llvm::StringRef(xarg->getValue()).equals("c")) {
+    // This is a dummy C compile.
+    return new DummyCompileC(*this, driver().executablePath());
+  }
   return new CompileGo(*this, driver().executablePath());
 }
 

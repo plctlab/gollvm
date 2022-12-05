@@ -43,7 +43,7 @@ class DrvTestHarness {
   // Returns non-zero on error, zero for success.
   unsigned Perform();
 
-  // Test that a dump of driver actions matches the expeced result.
+  // Test that a dump of driver actions matches the expected result.
   bool expectActions(const ExpectedDump &ed);
 
  private:
@@ -243,5 +243,28 @@ TEST(DriverTests, CompileAndLinkAction) {
   bool isOK = h.expectActions(exp);
   EXPECT_TRUE(isOK && "Actions dump does not have expected contents");
 }
+
+TEST(DriverTests, DummyCompileCAction) {
+  DrvTestHarness h(A("-c", "-x", "c", "-", "-o", "/dev/null", nullptr));
+
+  DECLARE_EXPECTED_OUTPUT(exp, R"RAW_RESULT(
+    Action readstdin
+      inputs:
+      output:
+        Artifact file(/tmp/out.readstdin.0)
+    Action compile+assemble
+      inputs:
+        readstdin
+      output:
+        Artifact arg(/dev/null)
+  )RAW_RESULT");
+
+  unsigned res = h.Perform();
+  ASSERT_TRUE(res == 0 && "Setup failed");
+
+  bool isOK = h.expectActions(exp);
+  EXPECT_TRUE(isOK && "Actions dump does not have expected contents");
+}
+
 
 } // namespace
