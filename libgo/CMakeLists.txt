@@ -482,6 +482,7 @@ set(runtimecfiles
   "runtime/go-reflect-call.c"
   "runtime/go-setenv.c"
   "runtime/go-signal.c"
+  "runtime/go-strerror.c"
   "runtime/go-unsafe-pointer.c"
   "runtime/go-unsetenv.c"
   "runtime/go-unwind.c"
