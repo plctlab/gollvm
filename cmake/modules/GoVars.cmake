@@ -11,6 +11,10 @@ if( ${llarch} STREQUAL "x86_64" )
 # LLVM's "aarch64" is the same as Go's "arm64".
 elseif( ${llarch} STREQUAL "aarch64" )
   set(goarch "arm64")
+elseif( ${llarch} STREQUAL "riscv64" )
+  # Driver::installedLibDir honors ./lib64 only
+  # Future change needed (along with those in AddGollvm.cmake)
+  set(goarch "riscv64")
 else()
   message(SEND_ERROR "Arch ${llarch} not yet supported")
 endif()
@@ -26,6 +30,10 @@ if( ${llarch} STREQUAL "x86_64" )
 elseif( ${llarch} STREQUAL "aarch64" )
 # Driver::installedLibDir honors ./lib64 only
 # Future change needed (along with those in AddGollvm.cmake)
+  set(library_suffix "64")
+elseif( ${llarch} STREQUAL "riscv64" )
+  # Driver::installedLibDir honors ./lib64 only
+  # Future change needed (along with those in AddGollvm.cmake)
   set(library_suffix "64")
 else()
   message(SEND_ERROR "Arch ${llarch} not yet supported")

@@ -141,6 +141,7 @@ class EightByteInfo {
   void incorporateScalar(Btype *bt);
   void determineABITypesForARM_AAPCS();
   void determineABITypesForX86_64_SysV();
+  void determineABITypesForRISC_V();
   TypeManager *tm() const { return typeManager_; }
 };
 
@@ -159,6 +160,9 @@ EightByteInfo::EightByteInfo(Btype *bt, TypeManager *tmgr)
       // For HFA and indirect cases, we don't need do this.
       determineABITypesForARM_AAPCS();
     }
+    break;
+  case gollvm::driver::CallingConvId::RISCV64_C:
+    determineABITypesForRISC_V();
     break;
   default:
     llvm::errs() << "unsupported gollvm::driver::CallingConvId " << static_cast<int>(cconv) << "\n";
@@ -491,6 +495,79 @@ void EightByteInfo::determineABITypesForX86_64_SysV()
     ebrs_[0].abiDirectType = tm()->llvmDoubleType();
 }
 
+// Select the appropriate abi type for each eight-byte region within
+// an EightByteInfo. Pure floating point types are mapped onto float,
+// double, or <2 x float> (a vector type), integer types (or something
+// that is a mix of integer and non-integer) are mapped onto the
+// appropriately sized integer type.
+//
+// Problems arise in the code below when dealing with structures with
+// constructs that inject additional padding. For example, consider
+// the following struct passed by value:
+//
+//      struct {
+//        f1 int8
+//        f2 [0]uint64
+//        f3 int8
+//      }
+//
+// Without taking into account the over-alignment of field f3, we would
+// wind up with two regions, each with type int8. This in itself is not so
+// bad, but creating a struct from these two types (via ::computeABIStructType)
+// would give us { int8, int8 }, in which the second field doesn't have
+// the correct alignment. Work around this by checking for such situations
+// and promoting the type of the first EBR to 64 bits.
+//
+void EightByteInfo::determineABITypesForRISC_V() {
+  // In the direct case, ebrs_.size() cannot be greater than 2 because
+  // parameters larger than 16 bytes are passed indirectly.
+  assert(ebrs_.size() <= 2);
+  unsigned intRegions = 0;
+  unsigned floatRegions = 0;
+  for (auto &ebr : ebrs_) {
+    if (ebr.abiDirectType != nullptr)
+      continue;
+    TypDisp regionDisp = ebr.getRegionTypDisp();
+    if (regionDisp == FlavSSE) {
+      // Case 1: two floats -> two float structs
+      if (ebr.types.size() == 2) {
+        assert(ebr.types[0] == tm()->llvmDoubleType() ||
+               ebr.types[0] == tm()->llvmFloatType() ||
+               ebr.types[1] == tm()->llvmDoubleType() ||
+               ebr.types[1] == tm()->llvmFloatType());
+        ebr.abiDirectType =
+            tm()->makeLLVMTwoElementStructType(ebr.types[0], ebr.types[1]);
+      } else if (ebr.types.size() == 1) {
+        assert(ebr.types[0] == tm()->llvmDoubleType() ||
+               ebr.types[0] == tm()->llvmFloatType());
+        ebr.abiDirectType = ebr.types[0];
+      } else {
+        assert(false && "this should never happen");
+      }
+      floatRegions += 1;
+    } else {
+      unsigned nel = ebr.offsets.size();
+      unsigned bytes = ebr.offsets[nel - 1] - ebr.offsets[0] +
+                       tm()->llvmTypeSize(ebr.types[nel - 1]);
+      assert(bytes && bytes <= 8);
+      // Preserve pointerness for the use of GC.
+      // TODO: this assumes pointer is 8 byte, so we never pack pointer
+      // and other stuff together.
+      if (ebr.types[0]->isPointerTy())
+        ebr.abiDirectType = tm()->llvmPtrType();
+      else
+        ebr.abiDirectType = tm()->llvmArbitraryIntegerType(bytes);
+      intRegions += 1;
+    }
+  }
+
+  // See the example above for more on why this is needed.
+  if (intRegions == 2 && ebrs_[0].abiDirectType->isIntegerTy())
+    ebrs_[0].abiDirectType = tm()->llvmArbitraryIntegerType(8);
+  else if (floatRegions == 2 && ebrs_[0].abiDirectType == tm()->llvmFloatType())
+    ebrs_[0].abiDirectType = tm()->llvmDoubleType();
+}
+
 //......................................................................
 
 llvm::Type *CABIParamInfo::computeABIStructType(TypeManager *tm) const
@@ -556,6 +633,10 @@ public:
       availIntRegs_ = 8;
       availSIMDFPRegs_ = 8;
       break;
+    case gollvm::driver::CallingConvId::RISCV64_C:
+      availIntRegs_ = 8;
+      availFloatRegs_ = 8;
+      break;
     default:
       llvm::errs() << "unsupported gollvm::driver::CallingConvId " << static_cast<int>(cconv) << "\n";
       break;
@@ -578,6 +659,11 @@ public:
       availSIMDFPRegs_ = t;
     argCount_ += 1;
   }
+  void addDirectFloatArg() {
+    if (availFloatRegs_)
+      availFloatRegs_ -= 1;
+    argCount_ += 1;
+  }
   void addIndirectArg() { argCount_ += 1; }
   void addIndirectReturn() {
     if (availIntRegs_)
@@ -591,6 +677,7 @@ public:
   unsigned availIntRegs() const { return availIntRegs_; }
   unsigned availSSERegs() const { return availSSERegs_; }
   unsigned availSIMDFPRegs() const { return availSIMDFPRegs_; }
+  unsigned availFloatRegs() const { return availFloatRegs_; }
   void clearAvailIntRegs() { availIntRegs_ = 0; }
   void clearAvailSIMDFPRegs() { availSIMDFPRegs_ = 0; }
 
@@ -598,6 +685,7 @@ private:
   unsigned availIntRegs_;
   unsigned availSSERegs_;
   unsigned availSIMDFPRegs_;
+  unsigned availFloatRegs_;
   unsigned argCount_;
 };
 
@@ -651,6 +739,10 @@ void CABIOracle::setCC()
     break;
   case gollvm::driver::CallingConvId::ARM_AAPCS:
     cc_ = std::unique_ptr<CABIOracleArgumentAnalyzer>(new CABIOracleARM_AAPCS(typeManager_));
+    break;
+  case gollvm::driver::CallingConvId::RISCV64_C:
+    cc_ = std::unique_ptr<CABIOracleArgumentAnalyzer>(
+        new CABIOracleRISC_V(typeManager_));
     break;
   default:
     llvm::errs() << "unsupported gollvm::driver::CallingConvId " << static_cast<int>(ccID_) << "\n";
@@ -1158,3 +1250,142 @@ CABIParamInfo CABIOracleARM_AAPCS::analyzeABIReturn(Btype *resultType,
 }
 
 //......................................................................
+
+CABIOracleRISC_V::CABIOracleRISC_V(TypeManager *typeManager)
+    : CABIOracleArgumentAnalyzer(typeManager) {}
+
+CABIParamDisp CABIOracleRISC_V::classifyArgType(Btype *btype) {
+  int64_t sz = tm_->typeSize(btype);
+  return (sz == 0 ? ParmIgnore : ((sz <= 16) ? ParmDirect : ParmIndirect));
+}
+
+// Given the number of registers that we think a param is going to consume, and
+// a state object storing the registers used so far, canPassDirectly() makes a
+// decision as to whether a given param can be passed directly in registers vs
+// in memory.
+//
+// Note the first clause, "if (regsInt + regsSIMDFP == 1) return true". This may
+// seem counter-intuitive (why no check against the state object?), but this way
+// of doing things is the convention used by other front ends (e.g. clang). What
+// is happening here is that for larger aggregate/array params (things that
+// don't fit into a single register), we'll make the pass-through-memory
+// semantics explicit in the function signature and generate the explict code to
+// copy things into memory. For params that do fit into a single register,
+// however, we just leave them all as by-value parameters and then assume that
+// the back end will do the right thing (e.g. pass the first few in registers
+// and then the remaining ones in memory).
+//
+// Doing things this way has performance advantages in that the middle-end
+// (all of the machine-independent LLVM optimization passes) won't have
+// to deal with the additional chunks of stack memory and code to copy
+// things onto and off of the stack (not to mention the aliasing concerns
+// when a local variable's address is taken and then passed in a function
+// call).
+
+bool CABIOracleRISC_V::canPassDirectly(unsigned regsInt, unsigned regsFloat,
+                                       ABIState &state) {
+  if (regsInt + regsFloat == 1) // see comment above
+    return true;
+  if (regsInt <= state.availIntRegs() && regsFloat <= state.availFloatRegs())
+    return true;
+  return false;
+}
+
+CABIParamInfo CABIOracleRISC_V::analyzeABIParam(Btype *paramType,
+                                                ABIState &state) {
+  llvm::Type *ptyp = paramType->type();
+
+  // The only situations in which we should be seeing AuxT types here is
+  // in cases where we're analyzing the signatures of builtin functions,
+  // meaning that there should be no structures or arrays.
+  assert(paramType->flavor() != Btype::AuxT || ptyp->isVoidTy() ||
+         !(ptyp->isStructTy() || ptyp->isArrayTy() || ptyp->isVectorTy() ||
+           ptyp->isEmptyTy() || ptyp->isIntegerTy(8) || ptyp->isIntegerTy(16)));
+
+  CABIParamDisp pdisp = classifyArgType(paramType);
+
+  if (pdisp == ParmIgnore) {
+    // Empty struct or array
+    llvm::Type *voidType = tm_->llvmVoidType();
+    return CABIParamInfo(voidType, ParmIgnore, AttrNone, -1);
+  }
+
+  int sigOff = state.argCount();
+
+  if (pdisp == ParmIndirect) {
+    // Value will be passed in memory on stack.
+    // Stack is always in address space 0.
+    llvm::Type *ptrTyp = llvm::PointerType::get(ptyp, 0);
+    state.addIndirectArg();
+    return CABIParamInfo(ptrTyp, ParmIndirect, AttrByVal, sigOff);
+  }
+
+  // Figure out what to do in the direct case
+  assert(pdisp == ParmDirect);
+  EightByteInfo ebi(paramType, tm_);
+
+  // Figure out how many registers it would take to pass this parm directly
+  unsigned regsInt = 0, regsFloat = 0;
+  ebi.getRegisterRequirements(&regsInt, &regsFloat);
+
+  // Make direct/indirect decision
+  CABIParamAttr attr = AttrNone;
+  if (canPassDirectly(regsInt, regsFloat, state)) {
+    std::vector<llvm::Type *> abiTypes;
+    for (auto &ebr : ebi.regions()) {
+      abiTypes.push_back(ebr.abiDirectType);
+      if (ebr.attr != AttrNone) {
+        assert(attr == AttrNone || attr == ebr.attr);
+        attr = ebr.attr;
+      }
+      if (ebr.getRegionTypDisp() == FlavSSE)
+        state.addDirectFloatArg();
+      else
+        state.addDirectIntArg();
+    }
+    return CABIParamInfo(abiTypes, ParmDirect, attr, sigOff);
+  } else {
+    state.addIndirectArg();
+    llvm::Type *ptrTyp = llvm::PointerType::get(ptyp, 0);
+    return CABIParamInfo(ptrTyp, ParmIndirect, AttrByVal, sigOff);
+  }
+}
+
+CABIParamInfo CABIOracleRISC_V::analyzeABIReturn(Btype *resultType,
+                                                 ABIState &state) {
+  llvm::Type *rtyp = resultType->type();
+  CABIParamDisp rdisp =
+      (rtyp == tm_->llvmVoidType() ? ParmIgnore : classifyArgType(resultType));
+
+  if (rdisp == ParmIgnore) {
+    // This corresponds to a function with no returns or
+    // returning an empty composite.
+    llvm::Type *voidType = tm_->llvmVoidType();
+    return CABIParamInfo(voidType, ParmIgnore, AttrNone, -1);
+  }
+
+  if (rdisp == ParmIndirect) {
+    // Return value will be passed in memory, via a hidden
+    // struct return param.
+    // It is on stack, therefore address space 0.
+    llvm::Type *ptrTyp = llvm::PointerType::get(rtyp, 0);
+    state.addIndirectReturn();
+    return CABIParamInfo(ptrTyp, ParmIndirect, AttrStructReturn, 0);
+  }
+
+  // Figure out what to do in the direct case
+  assert(rdisp == ParmDirect);
+  EightByteInfo ebi(resultType, tm_);
+  auto &regions = ebi.regions();
+  if (regions.size() == 1) {
+    // Single value
+    return CABIParamInfo(regions[0].abiDirectType, ParmDirect, regions[0].attr,
+                         -1);
+  }
+
+  // Two-element struct
+  assert(regions.size() == 2);
+  llvm::Type *abiTyp = tm_->makeLLVMTwoElementStructType(
+      regions[0].abiDirectType, regions[1].abiDirectType);
+  return CABIParamInfo(abiTyp, ParmDirect, AttrNone, -1);
+}
