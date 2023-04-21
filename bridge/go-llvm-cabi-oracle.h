@@ -248,4 +248,18 @@ class CABIOracleARM_AAPCS : public CABIOracleArgumentAnalyzer {
   bool canPassDirectly(unsigned regsInt, unsigned regsSSE, ABIState &state);
 };
 
+class CABIOracleRISC_V : public CABIOracleArgumentAnalyzer {
+public:
+  // Given information on the param types and result type for a
+  // function, create an oracle object that can answer C ABI
+  // queries about the function.
+  CABIOracleRISC_V(TypeManager *typeManager);
+  CABIParamInfo analyzeABIParam(Btype *pType, ABIState &state);
+  CABIParamInfo analyzeABIReturn(Btype *resultType, ABIState &state);
+
+private:
+  CABIParamDisp classifyArgType(Btype *btype);
+  bool canPassDirectly(unsigned regsInt, unsigned regsSSE, ABIState &state);
+};
+
 #endif // LLVMGOFRONTEND_GO_LLVM_CABI_ORACLE_H

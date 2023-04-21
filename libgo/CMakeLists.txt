@@ -86,6 +86,9 @@ set(tmp_libgo_extra_gocflags ${GOLLVM_EXTRA_GOCFLAGS})
 if(GOLLVM_EXTRA_GOCFLAGS)
   string(REPLACE " " ";" libgo_extra_gocflags ${tmp_libgo_extra_gocflags})
 endif()
+if (${llarch} STREQUAL "riscv64")
+  string(APPEND libgo_extra_gocflags ";-latomic")
+endif()
 if(NOT GOLLVM_USE_SPLIT_STACK)
   list(APPEND libgo_extra_gocflags "-fno-split-stack")
 endif()
@@ -510,7 +513,7 @@ list(APPEND runtimecfiles
   "go/syscall/signame.c"
   "go/syscall/wait.c")
 
-if (NOT ${goarch} STREQUAL "arm64")
+if (${goarch} STREQUAL "amd64")
   list(APPEND runtimecfiles
     "go/golang.org/x/sys/cpu/cpu_gccgo_x86.c")
 endif()
@@ -530,6 +533,7 @@ endforeach()
 # go-wrapper.c is not in gofrontend/libgo
 list(APPEND runtimecpaths "${GOLLVM_SOURCE_DIR}/libgo/runtime/go-wrappers.c")
 
+
 # Compiler flags for C files in the runtime.
 set(baseopts "-g -Wno-zero-length-array ")
 if(GOLLVM_USE_SPLIT_STACK)
@@ -538,6 +542,10 @@ endif()
 foreach(def ${basedefines})
   string(APPEND baseopts "${def} ")
 endforeach()
+# Force -funwind-tables to be used for RISC-V so .eh_frame exists for stack unwinding.
+if (${goarch} STREQUAL "riscv64")
+  string(APPEND baseopts "-funwind-tables ")
+endif()
 string(APPEND baseopts "${GOLLVM_EXTRA_CFLAGS} ")
 
 # Special flags required for aeshash.c (functions in this file are called
@@ -545,6 +553,8 @@ string(APPEND baseopts "${GOLLVM_EXTRA_CFLAGS} ")
 # specific architectural features).
 if (${goarch} STREQUAL "arm64")
   set_source_files_properties(${libgo_csrcroot}/runtime/aeshash.c PROPERTIES COMPILE_FLAGS "-march=armv8-a+crypto")
+elseif (${goarch} STREQUAL "riscv64")
+    set_source_files_properties(${libgo_csrcroot}/runtime/aeshash.c PROPERTIES COMPILE_FLAGS "-march=rv64gc")
 else()
   set_source_files_properties(${libgo_csrcroot}/runtime/aeshash.c PROPERTIES COMPILE_FLAGS "-maes -mssse3")
 endif()

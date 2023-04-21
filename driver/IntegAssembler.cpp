@@ -179,6 +179,8 @@ bool IntegAssemblerImpl::invokeAssembler()
   assert(MRI && "Unable to create target register info!");
 
   MCTargetOptions MCOptions;
+  if (triple_.getArch() == llvm::Triple::riscv64)
+    MCOptions.ABIName = "lp64d";
   std::unique_ptr<MCAsmInfo> MAI(
       TheTarget->createMCAsmInfo(*MRI, Trip, MCOptions));
   assert(MAI && "Unable to create target asm info!");

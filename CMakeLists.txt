@@ -18,6 +18,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 set(GOLLVM_USE_SPLIT_STACK ON CACHE BOOL "use split stack by default")
 set(GOLLVM_DEFAULT_LINKER gold CACHE STRING "default linker for Go links")
 
+string(REGEX REPLACE "-" " " lht_components ${LLVM_DEFAULT_TARGET_TRIPLE})
+separate_arguments(lht_components)
+list(GET lht_components 0 llarch)
+
 include(CmakeUtils)
 include(AddGollvm)
 
@@ -40,9 +44,6 @@ set(EXTCC "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
 set(gollvm_binroot "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Set MPN path according to the target processor
-string(REGEX REPLACE "-" " " lht_components ${LLVM_DEFAULT_TARGET_TRIPLE})
-separate_arguments(lht_components)
-list(GET lht_components 0 llarch)
 
 if( ${llarch} STREQUAL "x86_64" )
   set(MPN_PATH "x86_64 generic")
